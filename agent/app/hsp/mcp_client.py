@@ -95,3 +95,40 @@ def _error_text(payload: dict) -> str:
         if payload.get(key):
             return str(payload[key])
     return json.dumps(payload)[:500]
+
+
+def flatten_error(exc: BaseException) -> str:
+    """MCP errors arrive wrapped in ExceptionGroups; surface the innermost messages."""
+    subs = getattr(exc, "exceptions", None)
+    if subs:
+        return "; ".join(flatten_error(e) for e in subs)
+    return f"{type(exc).__name__}: {exc}" + (f" <- {flatten_error(exc.__cause__)}" if exc.__cause__ else "")
+
+
+async def probe(url: str) -> dict:
+    """Why can't we use HSP? Checks the documented /health endpoint and this machine's public egress IP."""
+    import httpx
+    out: dict = {"health": None, "egress_ip": None}
+    async with httpx.AsyncClient(timeout=10) as client:
+        try:
+            r = await client.get(url.rstrip("/") + "/health")
+            out["health"] = r.json() if r.status_code == 200 else {"http_status": r.status_code}
+        except Exception as exc:
+            out["health"] = {"error": type(exc).__name__, "detail": str(exc)[:200]}
+        try:
+            out["egress_ip"] = (await client.get("https://api.ipify.org")).text.strip()
+        except Exception:
+            pass
+    h = out["health"] or {}
+    ip = out["egress_ip"] or "unknown"
+    if h.get("http_status") in (401, 403):
+        out.update(cause="not_allowlisted", hint=(f"HSP refused this machine (HTTP {h['http_status']}). Its public IP {ip} is not on the HSP QA "
+                                                  "allowlist. Ask HSP Operations to allowlist this IP, or run from the network whose IP they approved."))
+    elif "certificate" in str(h).lower() or "ssl" in str(h).lower():
+        out.update(cause="tls_interception", hint=("TLS to HSP could not be verified: a firewall or proxy on this network (for example FortiGate SSL "
+                                                   "inspection) is replacing HSP's certificate. Use a network without SSL inspection."))
+    elif h.get("error"):
+        out.update(cause="unreachable", hint=f"HSP did not answer from this network ({h['error']}). Public IP {ip}.")
+    else:
+        out.update(cause="unknown", hint=None)
+    return out

@@ -42,6 +42,8 @@ export type Business = {
   revenue_by_product: Record<string, number>;
 };
 
+export type HspStatus = { reachable: boolean; reason?: string; tools?: string[]; cause?: string | null; hint?: string | null; egress_ip?: string | null };
+
 export type WireEntry = { dir: "out" | "in"; kind: string; at: string; ms?: number | null; payload: any };
 
 export type AgentCard = {
@@ -113,13 +115,13 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  agentCard: () => req<AgentCard>("/.well-known/agent-card.json"),
+  agentCard: () => req<AgentCard>("/a2a/merchant-card"),
   health: () => req<Record<string, any>>("/health"),
   agents: () => req<{ buyer: string; merchant: string; personas: Persona[] }>("/agents"),
   leaderboard: () => req<LeaderRow[]>("/agents/leaderboard"),
   business: () => req<Business>("/business"),
   catalog: () => req<{ id: string; label: string; price_usd: string }[]>("/catalog"),
-  hspStatus: () => req<{ reachable: boolean; reason?: string; tools?: string[] }>("/hsp/status"),
+  hspStatus: () => req<HspStatus>("/hsp/status"),
   trust: (address: string) => req<Trust>(`/agents/${address}/trust`),
   network: () => req<Business["chain"]>("/network"),
   runs: () => req<Run[]>("/a2a/runs"),

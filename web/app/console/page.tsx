@@ -9,7 +9,7 @@ import TrustPanel from "@/components/console/TrustPanel";
 import WirePanel from "@/components/console/WirePanel";
 import StateBadge from "@/components/StateBadge";
 import { AgentAvatar, RailBadge, TermsBadge } from "@/components/ui";
-import { addrUrl, api, short, usd, type AgentCard, type LeaderRow, type Run, type Trust } from "@/lib/api";
+import { addrUrl, api, short, usd, type AgentCard, type HspStatus, type LeaderRow, type Run, type Trust } from "@/lib/api";
 
 const BORROWERS = [
   { address: "0x2988f0bE02e1a679430aEb4A6B9B10429F1e8e80", label: "Borrower A" },
@@ -41,7 +41,8 @@ export default function ConsolePage() {
   const [personas, setPersonas] = useState<LeaderRow[]>([]);
   const [persona, setPersona] = useState("nova");
   const [rail, setRail] = useState<"sandbox" | "hsp">("sandbox");
-  const [hsp, setHsp] = useState<{ reachable: boolean; hint?: string } | null>(null);
+  const [hsp, setHsp] = useState<HspStatus | null>(null);
+  const [checking, setChecking] = useState(false);
   const [card, setCard] = useState<AgentCard | null>(null);
   const [trust, setTrust] = useState<Trust | null>(null);
   const [prevScore, setPrevScore] = useState<number>();
@@ -114,6 +115,14 @@ export default function ConsolePage() {
       setBusy(false);
     }
   }
+
+  async function recheckHsp() {
+    setChecking(true);
+    setHsp(await api.hspStatus().catch(() => ({ reachable: false })));
+    setChecking(false);
+  }
+
+  const hspBlocked = rail === "hsp" && hsp !== null && !hsp.reachable;
 
   async function openConfirm() {
     setError(null);
@@ -204,8 +213,22 @@ export default function ConsolePage() {
           </div>
         }
       >
-        {rail === "hsp" && hsp && !hsp.reachable && (
-          <p className="mb-4 rounded-2xl bg-warn/10 px-4 py-3 text-sm text-warn">{hsp.hint ?? "HSP is not reachable from this server yet. It needs IP allowlisting by HSP Operations."}</p>
+        {rail === "hsp" && hsp && (
+          hsp.reachable ? (
+            <p className="mb-4 flex items-center gap-2 rounded-2xl bg-good/10 px-4 py-3 text-sm text-good">
+              <span className="size-2 rounded-full bg-good" /> Connected to HSP Agentic Payment · {hsp.tools?.length ?? 0} tools verified
+              {hsp.egress_ip && <span className="ml-auto font-mono text-xs opacity-70">IP {hsp.egress_ip}</span>}
+            </p>
+          ) : (
+            <div role="alert" className="mb-4 rounded-2xl bg-warn/10 px-4 py-3 text-sm text-warn">
+              <div className="font-medium">HSP is not accepting this machine right now</div>
+              <p className="mt-1 text-warn/90">{hsp.hint ?? "HSP is not reachable from this network."}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                {hsp.egress_ip && <span className="rounded-full bg-black/30 px-3 py-1 font-mono text-xs">Your public IP: {hsp.egress_ip}</span>}
+                <button onClick={recheckHsp} disabled={checking} className="text-xs font-medium underline">{checking ? "Checking…" : "Check again"}</button>
+              </div>
+            </div>
+          )
         )}
         <div className="grid gap-3 sm:grid-cols-3" role="radiogroup" aria-label="Product">
           {PRODUCTS.map((p) => (
@@ -252,10 +275,12 @@ export default function ConsolePage() {
         )}
 
         <div className="mt-8 flex flex-col items-center gap-3">
-          <button onClick={openConfirm} disabled={busy || !personas.length || !input.trim()} className="btn-primary px-8 py-3 text-base">
+          <button onClick={openConfirm} disabled={busy || !personas.length || !input.trim() || hspBlocked} className="btn-primary px-8 py-3 text-base">
             Continue <ArrowRight className="size-4" />
           </button>
-          <span className="text-xs text-faint">Next: confirm team, recipient and payer. Nothing is signed yet.</span>
+          <span className="text-xs text-faint">
+            {hspBlocked ? "Switch to the sandbox rail, or wait until HSP accepts this machine." : "Next: confirm team, recipient and payer. Nothing is signed yet."}
+          </span>
         </div>
       </Section>
 

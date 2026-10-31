@@ -73,44 +73,20 @@ def health():
 
 @app.get("/hsp/status")
 async def hsp_status():
-    """Whether this machine can reach the HSP MCP server (requires IP allowlisting)."""
-    import httpx
-    from app.hsp.mcp_client import HSPAgenticPayment
-    health = None
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            r = await client.get(settings.hsp_mcp_url.rstrip("/") + "/health")
-            health = r.json() if r.status_code == 200 else {"http_status": r.status_code}
-    except Exception as exc:
-        health = {"error": type(exc).__name__}
+    """Whether this machine can use the HSP MCP server, and if not, why (allowlist, TLS, network)."""
+    from app.hsp.mcp_client import HSPAgenticPayment, flatten_error, probe
     try:
         tools = await HSPAgenticPayment(settings.hsp_mcp_url).schemas()
-        return {"reachable": True, "health": health, "tools": sorted(tools)}
+        return {"reachable": True, "tools": sorted(tools), **(await probe(settings.hsp_mcp_url))} | {"cause": None, "hint": None}
     except Exception as exc:
-        return {"reachable": False, "health": health, "reason": _flatten(exc)[:400], **_diagnose(exc)}
+        return {"reachable": False, "reason": flatten_error(exc)[:400], **(await probe(settings.hsp_mcp_url))}
 
 
-def _flatten(exc: BaseException) -> str:
-    """MCP errors arrive wrapped in ExceptionGroups; surface the innermost messages."""
-    subs = getattr(exc, "exceptions", None)
-    if subs:
-        return "; ".join(_flatten(e) for e in subs)
-    return f"{type(exc).__name__}: {exc}" + (f" <- {_flatten(exc.__cause__)}" if exc.__cause__ else "")
-
-
-def _diagnose(exc: BaseException) -> dict:
-    text = _flatten(exc).lower()
-    if "certificate" in text or "ssl" in text:
-        return {"cause": "tls_interception",
-                "hint": ("TLS to the HSP server could not be verified. A firewall or proxy on this network "
-                         "(for example a FortiGate doing SSL inspection) is replacing HSP's certificate. Run the "
-                         "agent from a network without SSL inspection, such as a mobile hotspot or a cloud VM, "
-                         "and have that machine's public IP allowlisted by HSP.")}
-    if "403" in text or "forbidden" in text or "401" in text:
-        return {"cause": "not_allowlisted", "hint": "HSP rejected this machine. Ask HSP Operations to allowlist its public IP."}
-    if "timed out" in text or "timeout" in text or "connect" in text:
-        return {"cause": "unreachable", "hint": "HSP server unreachable from this machine (network or allowlist)."}
-    return {"cause": "unknown"}
+@app.get("/a2a/merchant-card")
+async def merchant_card():
+    """The Agent Card of the receiving agent this service actually buys from (remote when MERCHANT_AGENT_URL is set)."""
+    from app.agents.a2a_flow import A2AFlow
+    return await A2AFlow._peer().card()
 
 
 # --- A2A runs: start -> approve sign -> approve submit -> poll ---

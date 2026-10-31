@@ -27,7 +27,7 @@ from app.agents.merchant_agent import MerchantAgent
 from app.agents.personas import PERSONAS, persona_key
 from app.chain.registry import TrustRegistry
 from app.config import settings
-from app.hsp.mcp_client import HSPAgenticPayment, HSPToolError
+from app.hsp.mcp_client import HSPAgenticPayment, HSPToolError, flatten_error, probe
 from app.hsp.sandbox_rail import SandboxRail
 
 POLLING = {"payment-submitted", "payment-verified", "payment-processing", "payment-included", "payment-timeout"}
@@ -128,10 +128,19 @@ class A2AFlow:
         self.peer.wire = []
         return store.save(run)
 
-    def _fail(self, run: dict, exc: Exception) -> dict:
+    def _fail(self, run: dict, exc: Exception, detail: str | None = None) -> dict:
         run["state"] = "failed"
-        self._step(run, "error", "Run stopped", str(exc), status="error", error_type=type(exc).__name__)
+        self._step(run, "error", "Run stopped", detail or flatten_error(exc), status="error", error_type=type(exc).__name__)
         return self._save(run)
+
+    async def _afail(self, run: dict, exc: Exception) -> dict:
+        """Fail the run with a reason a person can act on. HSP transport errors are probed for allowlist/TLS causes."""
+        detail = flatten_error(exc)
+        if self.rail == "hsp" and (isinstance(exc, BaseExceptionGroup | ConnectionError) or "MCPError" in detail):
+            diag = await probe(settings.hsp_mcp_url)
+            if diag.get("hint"):
+                detail = f"{diag['hint']} No order was created and nothing was signed." if run["state"] == "running" else diag["hint"]
+        return self._fail(run, exc, detail)
 
     def _explorer_tx(self, tx: str) -> str:
         return f"{settings.network.explorer}/tx/{tx}"
@@ -273,7 +282,7 @@ class A2AFlow:
             self._step(run, "approve_sign", "Waiting for your approval to sign", status="waiting", **self._approval_view(run))
             return self._save(run)
         except Exception as exc:
-            return self._fail(run, exc)
+            return await self._afail(run, exc)
 
     # ---------- phase 2: sign + finalize ----------
 
@@ -302,7 +311,7 @@ class A2AFlow:
             self._step(run, "approve_submit", "Waiting for your approval to submit", status="waiting", **self._approval_view(run))
             return self._save(run)
         except Exception as exc:
-            return self._fail(run, exc)
+            return await self._afail(run, exc)
 
     def _sign(self, eip712: dict) -> str:
         """Sign exactly the returned EIP-712 data: domain, types, primaryType and message untouched."""
@@ -340,7 +349,7 @@ class A2AFlow:
                 return self._save(run)
             return self._fail(run, exc)
         except Exception as exc:
-            return self._fail(run, exc)
+            return await self._afail(run, exc)
 
     # ---------- phase 4: poll the rail; receiving agent verifies, anchors, delivers ----------
 
