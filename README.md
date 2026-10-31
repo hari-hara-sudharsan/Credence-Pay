@@ -62,10 +62,40 @@ The registry holds **28 settlements, $84.50 of merchant volume, $0.65 of Credenc
 
 | Rail | Settles in | Status |
 |---|---|---|
-| **HSP Agentic Payment** (primary) | USDC via the HSP Gateway | Fully implemented against the HSP MCP server; enabled once HSP allowlists our server IP |
+| **HSP Agentic Payment** (primary) | USDC (`0x8FE3…53c6`, eip3009) via the HSP Gateway | Connected to the live HSP QA MCP server on Oct 31: all 8 tools verified, live schemas match, `get_chain_config` resolves HSK testnet USDC. First live payment is waiting on test USDC in a payer wallet, which the team funds manually as the guide requires |
 | **Sandbox rail** | Credence Test USD (cUSD) on HSK testnet | Live. It exposes the same 8 tools as the HSP MCP server and settles real EIP-3009 `transferWithAuthorization` transactions |
 
 Both rails run the identical state machine: trust check, order, quote, spending-policy check, two human approvals, settlement, anchoring. Every step and every settlement is labelled with the rail it used. A sandbox payment is never presented as an HSP payment.
+
+### Real A2A: two agents, two processes, one protocol
+
+The receiving agent is a standalone **A2A server** (A2A spec 0.3, JSON-RPC 2.0). The payment agent never calls its code. It finds the agent through its Agent Card and buys from it with **AP2 payment mandates** over HTTP. Any A2A-compliant agent can buy from the Credence Risk Agent the same way.
+
+| # | Direction | A2A message | What it carries |
+|---|---|---|---|
+| 1 | payment → receiving | `GET /.well-known/agent-card.json` | Skills, the AP2 extension (required), the Credence trust-terms extension, HSP `payTo` |
+| 2 | payment → receiving | `message/send` | `ap2.mandates.IntentMandate`, `credence.QuoteRequest`, and `credence.IdentityProof` (an EIP-191 signature from the payer's wallet, bound to the A2A context) |
+| 3 | receiving → payment | `Task` · `input-required` | `ap2.mandates.CartMandate` (HSP order created by the receiving agent) and `credence.Terms`. For trusted payers it also carries the goods and the on-chain tab transaction |
+| 4 | payment → receiving | `message/send` | `ap2.mandates.PaymentMandate`, sent after both human approvals and HSP `submit_payment` |
+| 5 | payment → receiving | `message/send` | `credence.SettlementNotice` |
+| 6 | receiving → payment | `Task` · `completed` | `credence.SettlementReceipt` (anchor transaction, trust before/after, next terms) and the goods |
+
+Two properties a naive A2A payment flow lacks:
+
+- **No impersonation.** Terms are priced from the payer's on-chain history, so the receiving agent recovers the identity signature before quoting. An agent that claims to be Atlas without Atlas's key is `rejected`, and no HSP order is created (`test_impersonating_a_trusted_payer_is_rejected`).
+- **The payer's word is not enough.** A settlement notice only triggers the receiving agent's own `query_payment` against the rail, with `expected_merchant_name`. It anchors and delivers only on `payment-safe` or `payment-finalized` (`test_receiving_agent_does_not_anchor_on_payer_word`).
+
+The console's **A2A wire** tab shows every JSON-RPC message of a run, with full payloads and latency.
+
+**Live A2A purchases, HSK testnet, Oct 31 2026** (Risk Agent on :8001, payment agent API on :8002, separate processes):
+
+| Run | Step | Transaction |
+|---|---|---|
+| Nova, PREPAY, trust 530 → 545 | Payment settled (EIP-3009) | [`0x49b8d1…f421`](https://testnet-explorer.hsk.xyz/tx/0x49b8d1e672deef960caf101bcb616edab7fd61b46106d5874d8174753a3bf421) |
+| | Verified by the receiving agent and anchored | [`0x094c42…cd4d`](https://testnet-explorer.hsk.xyz/tx/0x094c42780a03b2ca18cef113b22e171aa61156c442c840e6c9c4cbc6da59cd4d) |
+| Atlas, CREDIT, trust 729 → 745 | Tab opened, goods delivered before payment | [`0xf5ec24…7443`](https://testnet-explorer.hsk.xyz/tx/0xf5ec24c0687c4279283c13747cedfaa9bb1af64f010410ed09a599eac7637443) |
+| | Payment settled (EIP-3009) | [`0x2312eb…a273`](https://testnet-explorer.hsk.xyz/tx/0x2312ebf186079d7834040dd0c4949f7bf9a821a356e7d784bf41cfcb791ea273) |
+| | Verified, anchored, tab closed on time | [`0x31c0c9…8d7c`](https://testnet-explorer.hsk.xyz/tx/0x31c0c9eb8ef172f3956386fe0682b1b832082a62099aa63de18d49bf9a658d7c) |
 
 ---
 
@@ -116,7 +146,10 @@ On a trusted payer's next order, step 3 returns **Net** or **Credit**. The merch
 | Network, token, decimals and protocol only from `get_chain_config` | `select_token()` in [`a2a_flow.py`](agent/app/agents/a2a_flow.py) |
 | `create_order` with `merchant_name`, `pay_to` and a cart mandate without `merchant_authorization` | [`merchant_agent.py`](agent/app/agents/merchant_agent.py), [`cart_mandate.py`](agent/app/hsp/cart_mandate.py) |
 | Sign only the returned `eip712`, unmodified | `A2AFlow._sign()` passes it straight to `encode_typed_data` |
-| Show recipient, payer and `token_total_raw`; wait for approval before signing and before submitting | `awaiting_sign_approval` and `awaiting_submit_approval` states, plus the approval card in the console |
+| Confirm `merchant_name`, then `pay_to`, then the payer, one at a time, before `create_order` | `GET /a2a/preflight` plus the console's confirmation sheet. On the HSP rail the flow refuses to create an order unless all three were confirmed exactly (`test_hsp_order_needs_user_confirmation_of_team_recipient_and_payer`) |
+| Show recipient, payer and `token_total_raw`; wait for approval before signing and before submitting | `awaiting_sign_approval` and `awaiting_submit_approval` states, plus the approval sheets in the console |
+| After 10 minutes without a final state, report "Pending confirmation" with both identifiers and keep querying | `refresh()` adds a `pending` step and keeps polling the same payment |
+| Result report in the guide's template, from returned values only | `run.report`, shown on the console's Report tab; missing values are shown as `unavailable` |
 | Check the balance against `token_total_raw` before signing | `A2AFlow._prepare()` |
 | Quote expiry or Gateway error `30043` → re-prepare and re-sign | `approve_sign()` and `approve_submit()` |
 | Poll every 15 s, never create a duplicate order, `payment-safe` ≠ finalized | `refresh()` plus console polling; status wording follows the guide |
@@ -197,7 +230,18 @@ Example transactions from a live credit-terms purchase by Atlas:
 | Settlement anchored, trust 714 → 729 | [`0x22c7ff…b3ef`](https://testnet-explorer.hsk.xyz/tx/0x22c7ff0dbd95090b23dbe2f867bed6d11421b4ea271f879f40bc3c8b0133b3ef) |
 | Rogue's overdue tab marked defaulted | [`0xa94e50…fdf2`](https://testnet-explorer.hsk.xyz/tx/0xa94e502fb1ec89d9add7029798edf91e5f68d15460f83ffca626114dd903fdf2) |
 
-**Mainnet (chain 177):** the same module deploys there once the deployer has HSK gas. Links will be added here at that point.
+### HSK Chain Mainnet (177): deployment kit ready, waiting on gas
+
+[`ignition/modules/CredenceMainnet.ts`](ignition/modules/CredenceMainnet.ts) deploys only the hackathon layer (`AgentSpendingPolicy`, `A2ASettlementRegistry`). It wires the registry into the **ReputationRegistry already live on mainnet** and grants `SETTLER_ROLE` to the receiving agent. The test dollar is not deployed; on mainnet the HSP rail settles real USDC (`0x054ed4…8D0a`, EIP-3009).
+
+```powershell
+npx hardhat run scripts/rehearse-mainnet.ts                      # full rehearsal on a local chain: 6/6 wiring checks pass
+npx hardhat run scripts/mainnet-preflight.ts --network hashkey   # read-only: chain, gas budget, admin role, USDC, agent gas
+npx hardhat ignition deploy ignition/modules/CredenceMainnet.ts --network hashkey --deployment-id credence-mainnet `
+  --parameters '{"CredenceMainnet":{"merchantAgent":"0x6CE2E6D1e14E1a111Ba1D106e784b325E2820eb5"}}'
+```
+
+Preflight status, Oct 31: every check passes except gas. The mainnet base fee is 500 gwei, so the deployment needs about 1.5 HSK, and the deployer needs about 3 HSK on hand because transactions are admitted at the 1000 gwei max fee.
 
 ### Earlier Credence prototype (already on HSK mainnet)
 
@@ -279,13 +323,15 @@ cd agent; .\.venv\Scripts\python -m scripts.seed      # optional: build demo his
 |---|---|
 | `HSK_NETWORK` | `hashkey-testnet` (HSP QA) or `hashkey` |
 | `HSP_MCP_URL` | `https://mcp-qa.hashkeymerchant.com/` |
-| `HSP_TEAM_NAME` | Hackathon team name, used as `merchant_name` on create and query |
+| `HSP_TEAM_NAME` | Hackathon team name, used as `merchant_name` on create and query: **`Credence7`** |
 | `HSP_COIN` | Token chosen from `get_chain_config`, e.g. `USDC` |
 | `MERCHANT_AGENT_KEY` | Receiving agent wallet: `pay_to` and registry settler |
 | `BUYER_AGENT_KEY` | Payment agent wallet: signs EIP-712 authorisations |
 | `A2A_REGISTRY_ADDRESS`, `SPENDING_POLICY_ADDRESS`, `TEST_USD_ADDRESS` | Deployed contracts |
 | `DEFAULT_RAIL` | `sandbox` or `hsp` |
 | `PERSONA_KEYS` | `nova=0x…,orbit=0x…,atlas=0x…,rogue=0x…`: payment agent wallets |
+| `MERCHANT_AGENT_URL` | Base URL of a remote receiving agent, e.g. `http://localhost:8001`. Unset means the A2A server hosted in the same process (still real JSON-RPC messages) |
+| `PUBLIC_BASE_URL` | Public URL the receiving agent puts in its Agent Card |
 | `GROQ_API_KEY` | Optional; without it, intents are parsed by deterministic rules |
 
 ---
@@ -294,7 +340,7 @@ cd agent; .\.venv\Scripts\python -m scripts.seed      # optional: build demo his
 
 ```powershell
 npx hardhat test solidity                     # 75 passing
-cd agent; .\.venv\Scripts\python -m pytest    # 9 passing
+cd agent; .\.venv\Scripts\python -m pytest    # 13 passing
 ```
 
 - **Solidity (75):** 28 new tests.
@@ -303,7 +349,7 @@ cd agent; .\.venv\Scripts\python -m pytest    # 9 passing
   - cUSD EIP-3009: relayed authorisation, replay, expiry, wrong signer, faucet cooldown.
 
   The other 47 are tests imported with the prototype contracts.
-- **Python (9):** cart mandate shape, schema-driven argument fitting, chain-config token selection, and a **full A2A run against a fake HSP MCP server**. It asserts that nothing is signed before the first approval, nothing is submitted before the second, the signature recovers to the payer, settlement is anchored once, trust rises, and the spending policy blocks a payment before any signature.
+- **Python (13):** the A2A layer (Agent Card advertises AP2 and skills, impersonation rejected before any HSP order, no anchoring on the payer's word, JSON-RPC errors for unknown methods), cart mandate shape, schema-driven argument fitting, chain-config token selection, and a **full A2A run against a fake HSP MCP server**. It asserts that nothing is signed before the first approval, nothing is submitted before the second, the signature recovers to the payer, settlement is anchored once, trust rises, and the spending policy blocks a payment before any signature.
 
 ---
 
