@@ -14,8 +14,7 @@ from app.chain.registry import TrustRegistry
 from app.config import settings
 from app.credit.credit_engine import CreditEngine
 from app.credit.wallet_analyzer import WalletAnalyzer
-from app.hsp.cart_mandate import LineItem, PaymentConditions, build_cart_mandate
-from app.hsp.gateway import HSPGateway
+from app.hsp.cart_mandate import LineItem, build_contents
 
 CATALOG = {
     "risk_report": {"label": "Wallet risk report", "price": Decimal("0.10")},
@@ -27,10 +26,6 @@ class MerchantAgent:
     def __init__(self, registry: TrustRegistry):
         self.registry = registry
         self.address = Account.from_key(settings.merchant_agent_key).address
-        self.gateway = (
-            HSPGateway(settings.hsp_base_url, settings.hsp_app_key, settings.hsp_app_secret)
-            if settings.hsp_enabled else None
-        )
 
     def quote(self, payer: str, product: str, targets: list[str]) -> dict:
         """Price the order and pick terms from the payer's trust record."""
@@ -50,20 +45,21 @@ class MerchantAgent:
             "credit_limit": terms["credit_limit"],
         }
 
-    def issue_cart_mandate(self, quote: dict) -> dict:
-        """Build the Cart Mandate, sign it, and register it with HSP when credentials are configured."""
+    def cart_mandate(self, quote: dict, token: dict) -> dict:
+        """Payment conditions the receiving agent transmits, as an HSP cart mandate.
+
+        HSP generates merchant_authorization server-side, so none is attached here.
+        """
         order_id = f"CRED-{int(time.time())}-{uuid.uuid4().hex[:6]}"
-        cond = PaymentConditions(
+        contents = build_contents(
             cart_mandate_id=order_id,
             payment_request_id=f"{order_id}-PAY",
-            merchant_name=settings.merchant_name,
+            merchant_name=settings.hsp_team_name,
             pay_to=self.address,
             items=quote["items"],
-            network=settings.network,
+            token=token,
         )
-        body = build_cart_mandate(cond, settings.merchant_jwt_private_key)
-        hsp = self.gateway.create_order(body) if self.gateway else None
-        return {"body": body, "hsp": hsp, "cart_mandate_id": order_id}
+        return {"contents": contents}
 
     def deliver(self, product: str, targets: list[str]) -> list[dict]:
         """The goods: live credit analysis from Blockscout data via the transparent underwriting engine."""

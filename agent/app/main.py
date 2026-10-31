@@ -1,18 +1,12 @@
-import json
-
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from web3 import Web3
 
 from app.config import settings
-from app.hsp.signing import verify_webhook_signature
 
 app = FastAPI(title="Credence A2A Agent", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
-
-FINAL_STATUSES = {"payment-included", "payment-safe", "payment-finalized", "payment-failed"}
 
 
 class RunRequest(BaseModel):
@@ -27,30 +21,79 @@ def _registry():
     return reg
 
 
+def _flow():
+    from app.agents.a2a_flow import A2AFlow
+    return A2AFlow()
+
+
+def _run_or_404(run_id: str) -> dict:
+    from app.agents.a2a_flow import store
+    try:
+        return store.get(run_id)
+    except KeyError:
+        raise HTTPException(404, "run not found")
+
+
 @app.get("/health")
 def health():
     return {
         "network": settings.network.name,
         "chain_id": settings.network.chain_id,
-        "hsp_enabled": settings.hsp_enabled,
-        "settlement_mode": settings.settlement_mode,
+        "hsp_mcp_url": settings.hsp_mcp_url,
+        "hsp_team_name": settings.hsp_team_name,
+        "coin": settings.hsp_coin,
         "contracts": {"registry": settings.registry_address, "policy": settings.policy_address},
         "llm": bool(settings.groq_api_key),
     }
 
 
-@app.post("/a2a/run")
-def run(req: RunRequest):
-    """Server-sent events: one event per verifiable step of the A2A purchase."""
-    from app.agents.orchestrator import A2ARun
+@app.get("/hsp/tools")
+async def hsp_tools():
+    """Live HSP MCP tool list and input schemas (fails if a required tool is missing)."""
+    from app.hsp.mcp_client import HSPAgenticPayment
+    return await HSPAgenticPayment(settings.hsp_mcp_url).schemas()
 
-    def stream():
-        for step in A2ARun().run(req.instruction):
-            yield f"data: {json.dumps(step, default=str)}\n\n"
-        yield "data: {\"key\": \"end\"}\n\n"
 
-    return StreamingResponse(stream(), media_type="text/event-stream")
+# --- A2A runs: start -> approve sign -> approve submit -> poll ---
 
+@app.post("/a2a/runs")
+async def start_run(req: RunRequest):
+    return await _flow().start(req.instruction)
+
+
+@app.get("/a2a/runs")
+def list_runs(limit: int = 20):
+    from app.agents.a2a_flow import store
+    return store.latest(limit)
+
+
+@app.get("/a2a/runs/{run_id}")
+async def get_run(run_id: str):
+    run = _run_or_404(run_id)
+    if run["state"] == "settling":
+        run = await _flow().refresh(run_id)
+    return run
+
+
+@app.post("/a2a/runs/{run_id}/approve-sign")
+async def approve_sign(run_id: str):
+    _run_or_404(run_id)
+    try:
+        return await _flow().approve_sign(run_id)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc))
+
+
+@app.post("/a2a/runs/{run_id}/approve-submit")
+async def approve_submit(run_id: str):
+    _run_or_404(run_id)
+    try:
+        return await _flow().approve_submit(run_id)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc))
+
+
+# --- trust layer reads ---
 
 @app.get("/agents")
 def agents():
@@ -78,25 +121,3 @@ def trust(address: str):
 @app.get("/network")
 def network():
     return _registry().totals()
-
-
-@app.get("/runs")
-def runs(limit: int = 20):
-    path = settings.data_dir / "runs.jsonl"
-    if not path.exists():
-        return []
-    lines = path.read_text(encoding="utf-8").strip().splitlines()
-    return [json.loads(l) for l in reversed(lines[-limit:])]
-
-
-@app.post("/hsp/webhook")
-async def hsp_webhook(request: Request):
-    """HSP payment notifications, HMAC-verified with the app secret."""
-    raw = await request.body()
-    if not settings.hsp_app_secret or not verify_webhook_signature(raw, request.headers.get("X-Signature", ""), settings.hsp_app_secret):
-        raise HTTPException(401, "invalid signature")
-    event = json.loads(raw)
-    if event.get("status") in FINAL_STATUSES:
-        with (settings.data_dir / "hsp_webhooks.jsonl").open("a", encoding="utf-8") as f:
-            f.write(json.dumps(event) + "\n")
-    return {"ok": True}

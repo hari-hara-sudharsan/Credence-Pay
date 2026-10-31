@@ -76,6 +76,9 @@ class TrustRegistry:
             "any_merchant": any_merchant, "paused": paused, "spent_today": spent / 1e6,
         }
 
+    def is_settled(self, mandate_hash: str) -> bool:
+        return self.registry.functions.getMandate(to_bytes32(mandate_hash)).call()[8] == 2  # Status.SETTLED
+
     def totals(self) -> dict:
         return {
             "total_settled": self.registry.functions.totalSettled().call(),

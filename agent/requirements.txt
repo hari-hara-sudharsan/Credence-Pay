@@ -8,5 +8,6 @@ cryptography>=43
 eth-account>=0.13
 web3>=7.0
 groq>=0.11
+mcp>=2.3,<3
 pytest>=8.0
 httpx>=0.27

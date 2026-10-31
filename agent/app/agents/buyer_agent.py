@@ -1,8 +1,8 @@
 """Payment agent: a DeFi lending agent that buys risk reports to underwrite its borrowers.
 
-It turns a natural-language instruction into an intent, verifies the
-merchant's Cart Mandate, enforces its owner's on-chain spending policy,
-and only then signs a Payment Mandate.
+It turns a natural-language instruction into an intent. Verification,
+spending-policy enforcement and signing happen in the A2A flow against the
+quote HSP locks in prepare_payment.
 """
 
 import json
@@ -12,8 +12,6 @@ from eth_account import Account
 
 from app.chain.registry import TrustRegistry
 from app.config import settings
-from app.hsp.payment_mandate import build_payment_mandate, select_method, to_base_units
-from app.hsp.signing import verify_merchant_authorization
 
 ADDRESS_RE = re.compile(r"0x[a-fA-F0-9]{40}")
 
@@ -56,24 +54,3 @@ class BuyerAgent:
         # Never trust the model with addresses: only use ones literally present in the instruction.
         intent["targets"] = [t for t in intent.get("targets", targets) if t in targets] or targets
         return intent
-
-    def review_cart(self, cart_body: dict, intent: dict, merchant: str) -> dict:
-        """Verify merchant signature, budget and on-chain spending policy before signing anything."""
-        contents = cart_body["cart_mandate"]["contents"]
-        verify_merchant_authorization(contents, cart_body["cart_mandate"]["merchant_authorization"], settings.merchant_jwt_public_key)
-        method = select_method(contents, settings.network)
-        if method["pay_to"].lower() != merchant.lower():
-            raise ValueError("cart pays a different address than the agent we are trading with")
-
-        total = contents["payment_request"]["details"]["total"]["amount"]["value"]
-        if intent.get("max_budget_usd") is not None and float(total) > float(intent["max_budget_usd"]):
-            raise ValueError(f"cart total {total} USD exceeds intent budget {intent['max_budget_usd']} USD")
-
-        amount = to_base_units(total, settings.network.tokens["USDC"].decimals)
-        ok, reason = self.registry.check_spend(self.address, merchant, amount)
-        if not ok:
-            raise PermissionError(f"spending policy rejected payment: {reason}")
-        return {"total_usd": total, "amount": amount, "method": method}
-
-    def sign_payment_mandate(self, cart_body: dict) -> dict:
-        return build_payment_mandate(cart_body["cart_mandate"]["contents"], settings.network, settings.buyer_agent_key)
