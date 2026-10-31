@@ -19,9 +19,11 @@ from web3 import Web3
 
 from app.agents.buyer_agent import BuyerAgent
 from app.agents.merchant_agent import MerchantAgent
+from app.agents.personas import PERSONAS, persona_key
 from app.chain.registry import TrustRegistry
 from app.config import settings
 from app.hsp.mcp_client import HSPAgenticPayment, HSPToolError
+from app.hsp.sandbox_rail import SandboxRail
 
 POLLING = {"payment-submitted", "payment-verified", "payment-processing", "payment-included", "payment-timeout"}
 DONE = {"payment-safe", "payment-finalized"}
@@ -84,11 +86,20 @@ def select_token(chain_config: dict, network: str, chain_id: int, coin: str) -> 
 
 
 class A2AFlow:
-    def __init__(self):
-        self.hsp = HSPAgenticPayment(settings.hsp_mcp_url)
+    def __init__(self, persona: str = "nova", rail: str | None = None):
+        self.persona = persona
+        self.rail = rail or settings.default_rail
         self.registry = TrustRegistry()
         self.merchant = MerchantAgent(self.registry)
-        self.buyer = BuyerAgent(self.registry)
+        self.buyer = BuyerAgent(self.registry, persona_key(persona))
+        self.rail_label = "HSP" if self.rail == "hsp" else "sandbox rail"
+        self.hsp = (HSPAgenticPayment(settings.hsp_mcp_url) if self.rail == "hsp"
+                    else SandboxRail(self.registry.w3, settings.merchant_agent_key))
+
+    @classmethod
+    def for_run(cls, run_id: str) -> "A2AFlow":
+        run = store.get(run_id)
+        return cls(run.get("persona", "nova"), run.get("rail", "hsp"))
 
     # ---------- helpers ----------
 
@@ -138,6 +149,7 @@ class A2AFlow:
 
     async def start(self, instruction: str) -> dict:
         run = {"id": uuid.uuid4().hex[:12], "instruction": instruction, "created_at": _now(), "state": "running", "steps": [],
+               "persona": self.persona, "persona_name": PERSONAS[self.persona]["name"], "rail": self.rail,
                "payer": self.buyer.address, "payee": self.merchant.address, "merchant_name": settings.hsp_team_name}
         try:
             intent = self.buyer.parse_intent(instruction)
@@ -147,15 +159,17 @@ class A2AFlow:
             self._step(run, "intent", "Payment agent understood the task", f"{intent['product']} for {len(intent['targets'])} wallet(s)", intent=intent)
 
             config = await self.hsp.call("get_chain_config", {})
-            tok = select_token(config, settings.network.name, settings.network.chain_id, settings.hsp_coin)
-            run["token"] = {"symbol": settings.hsp_coin, "address": tok["address"], "decimals": int(tok["decimals"]),
+            coin = settings.hsp_coin if self.rail == "hsp" else "cUSD"
+            tok = select_token(config, settings.network.name, settings.network.chain_id, coin)
+            run["token"] = {"symbol": coin, "address": tok["address"], "decimals": int(tok["decimals"]),
                             "protocol": tok.get("payment_protocol") or tok.get("protocol"),
                             "network": tok.get("network", settings.network.name), "chain_id": int(tok.get("chain_id", settings.network.chain_id))}
-            self._step(run, "config", "HSP chain configuration loaded", f"{settings.hsp_coin} on {run['token']['network']} · {run['token']['protocol']}", token=run["token"])
+            self._step(run, "config", "HSP chain configuration loaded" if self.rail == "hsp" else "Sandbox rail configuration loaded (HSK testnet, cUSD)", f"{coin} on {run['token']['network']} · {run['token']['protocol']}", token=run["token"])
 
             before = self.registry.trust_score(self.buyer.address)
             quote = self.merchant.quote(self.buyer.address, intent["product"], intent["targets"])
             run["trust_before"], run["terms"] = before, quote["terms"]
+            run["total_usd"], run["product"] = str(quote["total_usd"]), intent["product"]
             terms_text = "pay before delivery" if quote["terms"] == "PREPAY" else f"deliver now, pay within {quote['net_days']} days"
             self._step(run, "trust", "Receiving agent checked payer trust on-chain", f"Trust {before} → {quote['terms']}: {terms_text}",
                        trust_score=before, terms=quote["terms"], net_days=quote["net_days"], credit_limit=quote["credit_limit"], total_usd=str(quote["total_usd"]))
@@ -166,7 +180,7 @@ class A2AFlow:
                 "cart_mandate": self.merchant.cart_mandate(quote, run["token"]),
             })
             run["order"] = order
-            self._step(run, "order", "Receiving agent created HSP order (Cart Mandate)", f"flow {order['flow_id']}",
+            self._step(run, "order", f"Receiving agent created {self.rail_label} order (Cart Mandate)", f"flow {order['flow_id']}",
                        flow_id=order["flow_id"], payment_request_id=order.get("payment_request_id"), payment_url=order.get("payment_url"))
 
             details = await self.hsp.call("get_order", {"flow_id": order["flow_id"]})
@@ -211,7 +225,7 @@ class A2AFlow:
                 "cart_hash": run["prepare"]["cart_hash"],
             })
             run["payment_mandate_json"] = final.get("payment_mandate_json", final)
-            self._step(run, "sign", f"Payment Mandate signed ({run['prepare']['eip712'].get('primaryType')}) and finalized by HSP",
+            self._step(run, "sign", f"Payment Mandate signed ({run['prepare']['eip712'].get('primaryType')}) and finalized by {self.rail_label}",
                        "Signature over the exact eip712 returned by prepare_payment", signature=signature[:18] + "…")
             run["state"] = "awaiting_submit_approval"
             self._step(run, "approve_submit", "Waiting for your approval to submit", status="waiting", **self._approval_view(run))
@@ -221,7 +235,7 @@ class A2AFlow:
 
     def _sign(self, eip712: dict) -> str:
         """Sign exactly the returned EIP-712 data: domain, types, primaryType and message untouched."""
-        signed = Account.from_key(settings.buyer_agent_key).sign_message(encode_typed_data(full_message=eip712))
+        signed = Account.from_key(self.buyer.key).sign_message(encode_typed_data(full_message=eip712))
         return "0x" + signed.signature.hex().removeprefix("0x")
 
     # ---------- phase 3: submit ----------
@@ -235,7 +249,7 @@ class A2AFlow:
             sub = await self.hsp.call("submit_payment", {"payment_mandate_json": run["payment_mandate_json"]})
             status = _find(sub, "status") or "payment-submitted"
             run["payment_status"] = status
-            self._step(run, "submit", "Submitted to HSP Gateway", f"Status: {status} (not final yet)", status_value=status)
+            self._step(run, "submit", "Submitted to HSP Gateway" if self.rail == "hsp" else "Submitted: receiving agent relays the authorisation on-chain", f"Status: {status} (not final yet)", status_value=status)
             run["state"] = "settling"
             return store.save(run)
         except HSPToolError as exc:
@@ -266,7 +280,7 @@ class A2AFlow:
             run["attribution_verified"] = res.get("attribution_verified")
             if status != run.get("payment_status"):
                 run["payment_status"] = status
-                self._step(run, "status", f"HSP status: {status}", payment.get("status_reason") or "",
+                self._step(run, "status", f"{self.rail_label} status: {status}", payment.get("status_reason") or "",
                            tx=payment.get("tx_signature") or None, attribution_verified=run["attribution_verified"])
 
             if status in DONE:
@@ -274,7 +288,7 @@ class A2AFlow:
             elif status == "payment-failed":
                 run["state"] = "failed"
             elif status not in POLLING:
-                self._step(run, "status", "Unrecognised HSP status", str(status), status="error")
+                self._step(run, "status", f"Unrecognised {self.rail_label} status", str(status), status="error")
             return store.save(run)
         except Exception as exc:
             # A failed query is not a failed payment: keep identifiers and keep polling.
@@ -292,12 +306,12 @@ class A2AFlow:
                 int(run["prepare"]["token_total_raw"]), run["order"]["flow_id"], tx,
             )
             run["anchor_tx"] = anchor_tx
-        after = self.registry.trust_score(self.buyer.address)
+        after = self.registry.trust_score_after(self.buyer.address, run["trust_before"])
         next_terms = self.registry.terms_for(self.buyer.address)
         run.update(state="settled", trust_after=after, next_terms=next_terms)
         final_text = ("Final confirmation reached." if payment.get("status") == "payment-finalized"
                       else "On-chain with half the required confirmations; not yet finalized.")
-        self._step(run, "settled", "Payment settled through HSP", final_text, tx=tx, explorer=self._explorer_tx(tx) if tx else None)
+        self._step(run, "settled", f"Payment settled through {self.rail_label}", final_text, tx=tx, explorer=self._explorer_tx(tx) if tx else None)
         self._step(run, "anchor", "Settlement anchored, trust updated", f"Trust {run['trust_before']} → {after} · next terms: {next_terms['terms']}",
                    tx=anchor_tx, explorer=self._explorer_tx(anchor_tx) if anchor_tx else None, trust_before=run["trust_before"], trust_after=after, next_terms=next_terms)
         if run["terms"] == "PREPAY":

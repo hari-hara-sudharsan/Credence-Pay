@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import {Test} from "forge-std/Test.sol";
 import {AgentSpendingPolicy} from "../../contracts/a2a/AgentSpendingPolicy.sol";
 import {A2ASettlementRegistry} from "../../contracts/a2a/A2ASettlementRegistry.sol";
+import {ReputationRegistry} from "../../contracts/core/ReputationRegistry.sol";
 
 contract A2ASettlementTest is Test {
     AgentSpendingPolicy policy;
@@ -216,5 +217,44 @@ contract A2ASettlementTest is Test {
         uint256 score = registry.trustScore(buyerAgent);
         assertGe(score, 300);
         assertLe(score, 900);
+    }
+
+    // ---------- business: fees and reputation ----------
+
+    function test_FeeAccruesOnlyOnDeferredTerms() public {
+        _settle(keccak256("prepay"), 10 * USD);
+        assertEq(registry.totalFees(), 0);
+
+        bytes32 h = keccak256("net-tab");
+        registry.openTab(h, buyerAgent, merchantAgent, usdc, 20 * USD, A2ASettlementRegistry.Terms.NET, uint64(block.timestamp + 7 days));
+        _settle(h, 0);
+        assertEq(registry.feesAccrued(merchantAgent), 20 * USD * 150 / 10_000); // 1.5%
+        assertEq(registry.getVolumeByTerms()[1], 20 * USD);
+        assertEq(registry.getVolumeByTerms()[0], 10 * USD);
+    }
+
+    function test_FeeCappedAndAdminOnly() public {
+        vm.expectRevert(A2ASettlementRegistry.InvalidTerms.selector);
+        registry.setFeeBps(1001);
+        vm.prank(address(0xDEAD));
+        vm.expectRevert();
+        registry.setFeeBps(10);
+    }
+
+    function test_OnTimeSettlementFeedsReputationRegistry() public {
+        ReputationRegistry rep = new ReputationRegistry();
+        rep.grantRole(rep.ORACLE_ROLE(), address(registry));
+        registry.setReputationRegistry(address(rep));
+        uint256 before = rep.getScore(buyerAgent);
+        _settle(keccak256("rep"), 5 * USD);
+        assertGt(rep.getScore(buyerAgent), before);
+    }
+
+    function test_DefaultTracksDefaultedVolume() public {
+        bytes32 h = keccak256("tab-d");
+        registry.openTab(h, buyerAgent, merchantAgent, usdc, 7 * USD, A2ASettlementRegistry.Terms.NET, uint64(1_800_000_000 + 1 days));
+        vm.warp(1_800_000_000 + 2 days);
+        registry.markDefault(h);
+        assertEq(registry.totalDefaulted(), 7 * USD);
     }
 }

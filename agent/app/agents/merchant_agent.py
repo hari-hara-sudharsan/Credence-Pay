@@ -17,8 +17,9 @@ from app.credit.wallet_analyzer import WalletAnalyzer
 from app.hsp.cart_mandate import LineItem, build_contents
 
 CATALOG = {
-    "risk_report": {"label": "Wallet risk report", "price": Decimal("0.10")},
-    "trust_attestation": {"label": "Signed trust attestation", "price": Decimal("0.05")},
+    "risk_report": {"label": "Wallet risk report", "price": Decimal("2.50")},
+    "trust_attestation": {"label": "Signed trust attestation", "price": Decimal("1.00")},
+    "portfolio_scan": {"label": "Counterparty portfolio scan", "price": Decimal("6.00")},
 }
 
 

@@ -24,6 +24,8 @@ class Settings:
     # Credence contracts
     registry_address: str | None
     policy_address: str | None
+    test_usd_address: str | None     # Credence Test USD for the sandbox rail
+    default_rail: str                # "sandbox" | "hsp"
     groq_api_key: str | None
     groq_model: str
     data_dir: Path
@@ -42,6 +44,8 @@ def load_settings() -> Settings:
         buyer_agent_key=os.getenv("BUYER_AGENT_KEY"),
         registry_address=os.getenv("A2A_REGISTRY_ADDRESS"),
         policy_address=os.getenv("SPENDING_POLICY_ADDRESS"),
+        test_usd_address=os.getenv("TEST_USD_ADDRESS"),
+        default_rail=os.getenv("DEFAULT_RAIL", "sandbox"),
         groq_api_key=os.getenv("GROQ_API_KEY"),
         groq_model=os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
         data_dir=data_dir,

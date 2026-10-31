@@ -7,6 +7,8 @@ from pathlib import Path
 from eth_account import Account
 from web3 import Web3
 
+from app.chain.nonce import next_nonce
+
 from app.config import settings
 
 ABI_DIR = Path(__file__).parent / "abi"
@@ -50,6 +52,17 @@ class TrustRegistry:
     def trust_score(self, agent: str) -> int:
         return self.registry.functions.trustScore(Web3.to_checksum_address(agent)).call()
 
+    def trust_score_after(self, agent: str, previous: int, attempts: int = 10) -> int:
+        """Read the score after a write, tolerating an RPC node that lags a block behind."""
+        import time
+        score = self.trust_score(agent)
+        for _ in range(attempts):
+            if score != previous:
+                break
+            time.sleep(1)
+            score = self.trust_score(agent)
+        return score
+
     def terms_for(self, agent: str) -> dict:
         terms, limit, net_days = self.registry.functions.termsFor(Web3.to_checksum_address(agent)).call()
         return {"terms": TERMS[terms], "credit_limit": limit / 1e6, "net_days": net_days}
@@ -80,9 +93,15 @@ class TrustRegistry:
         return self.registry.functions.getMandate(to_bytes32(mandate_hash)).call()[8] == 2  # Status.SETTLED
 
     def totals(self) -> dict:
+        f = self.registry.functions
+        prepay, net, credit = f.getVolumeByTerms().call()
         return {
-            "total_settled": self.registry.functions.totalSettled().call(),
-            "total_volume": self.registry.functions.totalVolume().call() / 1e6,
+            "total_settled": f.totalSettled().call(),
+            "total_volume": f.totalVolume().call() / 1e6,
+            "volume_by_terms": {"PREPAY": prepay / 1e6, "NET": net / 1e6, "CREDIT": credit / 1e6},
+            "total_fees": f.totalFees().call() / 1e6,
+            "total_defaulted": f.totalDefaulted().call() / 1e6,
+            "fee_bps": f.feeBps().call(),
         }
 
     # --- writes (merchant agent acts as SETTLER) ---
@@ -105,7 +124,7 @@ class TrustRegistry:
     def _send(self, fn) -> str:
         tx = fn.build_transaction({
             "from": self.settler.address,
-            "nonce": self.w3.eth.get_transaction_count(self.settler.address, "pending"),
+            "nonce": next_nonce(self.w3, self.settler.address),
             "chainId": settings.network.chain_id,
         })
         signed = self.settler.sign_transaction(tx)

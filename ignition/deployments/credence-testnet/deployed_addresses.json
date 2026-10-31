@@ -1,0 +1,10 @@
+{
+  "Credence#AgentSpendingPolicy": "0x7a9559Db3c9846825102c3513AbA2973A1A47BCA",
+  "Credence#CredenceTestUSD": "0x26985124407Bf5d3B3E0e1EAc8d904221f4b9bc5",
+  "Credence#CreditPassportV2": "0x23CB5b72399c552A5117E9762C754c429Eb5Dd3F",
+  "Credence#LendingPool": "0xc3D08c5D8fc127f4232f112a37399E1f2547ff39",
+  "Credence#LoanManager": "0xDC8FBDA1e52c7677dc05b062A30BBaC802Ac57d3",
+  "Credence#ReputationRegistry": "0x946E4397B93a147D68e7ADBa22C5A0EA718b00DC",
+  "Credence#SettlementManager": "0x578dF3A9ee35d8ade83BA742E1821c67cc7338C5",
+  "Credence#A2ASettlementRegistry": "0x0da11d916c5730E19a48bEc142387bEFDb59A819"
+}

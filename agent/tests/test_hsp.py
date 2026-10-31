@@ -134,6 +134,7 @@ class FakeRegistry:
         return 10**9
 
     def trust_score(self, a): return self.score
+    def trust_score_after(self, a, previous): return self.score
     def terms_for(self, a): return {"terms": "PREPAY", "credit_limit": 0, "net_days": 0}
     def check_spend(self, a, m, amt): return (True, "") if self.allow else (False, "exceeds daily cap")
     def is_settled(self, h): return h in self.settled
@@ -162,7 +163,8 @@ def flow(monkeypatch, tmp_path):
     f = af.A2AFlow.__new__(af.A2AFlow)
     f.registry = FakeRegistry()
     f.merchant = ma.MerchantAgent(f.registry)
-    f.buyer = ba.BuyerAgent(f.registry)
+    f.buyer = ba.BuyerAgent(f.registry, buyer.key.hex())
+    f.persona, f.rail, f.rail_label = "nova", "hsp", "HSP"
     f.merchant.deliver = lambda product, targets: [{"wallet": t, "credit_score": 700} for t in targets]
     f.hsp = FakeHSP(buyer.address, merchant.address)
     return f, buyer

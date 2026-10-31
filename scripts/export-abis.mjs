@@ -1,7 +1,7 @@
 // Copies the A2A contract ABIs from Hardhat artifacts into the agent and web apps.
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 
-const contracts = ["AgentSpendingPolicy", "A2ASettlementRegistry"];
+const contracts = ["AgentSpendingPolicy", "A2ASettlementRegistry", "CredenceTestUSD"];
 const targets = ["agent/app/chain/abi", "web/lib/abi"];
 
 for (const dir of targets) mkdirSync(dir, { recursive: true });

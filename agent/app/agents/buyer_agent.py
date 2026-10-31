@@ -16,15 +16,16 @@ from app.config import settings
 ADDRESS_RE = re.compile(r"0x[a-fA-F0-9]{40}")
 
 INTENT_PROMPT = """You are the payment agent of a DeFi lending protocol. Convert the user's
-instruction into JSON with keys: product ("risk_report" or "trust_attestation"),
+instruction into JSON with keys: product ("risk_report", "trust_attestation" or "portfolio_scan"),
 targets (list of 0x wallet addresses to analyse), max_budget_usd (number or null).
 Reply with JSON only."""
 
 
 class BuyerAgent:
-    def __init__(self, registry: TrustRegistry):
+    def __init__(self, registry: TrustRegistry, private_key: str):
         self.registry = registry
-        self.account = Account.from_key(settings.buyer_agent_key)
+        self.key = private_key
+        self.account = Account.from_key(private_key)
         self.address = self.account.address
 
     def parse_intent(self, instruction: str) -> dict:
@@ -47,7 +48,9 @@ class BuyerAgent:
         if intent is None:
             budget = re.search(r"(?:max|under|budget|up to)\s*\$?\s*(\d+(?:\.\d+)?)", instruction, re.I)
             intent = {
-                "product": "trust_attestation" if "attest" in instruction.lower() else "risk_report",
+                "product": ("trust_attestation" if "attest" in instruction.lower()
+                            else "portfolio_scan" if "portfolio" in instruction.lower() or "scan" in instruction.lower()
+                            else "risk_report"),
                 "max_budget_usd": float(budget.group(1)) if budget else None,
                 "source": "rules",
             }

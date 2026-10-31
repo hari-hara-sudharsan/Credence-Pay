@@ -7,6 +7,10 @@ interface ISpendingPolicy {
     function recordSpend(address agent, address merchant, uint256 amount, bytes32 mandateHash) external;
 }
 
+interface IReputationRegistry {
+    function recordRepayment(address wallet, uint256 amount) external;
+}
+
 /// @title A2ASettlementRegistry
 /// @notice On-chain memory for agent-to-agent payments settled through HSP.
 ///         Every settled Payment Mandate is anchored here (mandate hash ->
@@ -49,6 +53,15 @@ contract A2ASettlementRegistry is AccessControl {
     uint16 public constant MAX_SCORE = 900;
 
     ISpendingPolicy public spendingPolicy;
+    IReputationRegistry public reputation;   // Credence cross-application reputation (optional)
+
+    /// Credence fee on deferred-terms volume, in basis points, accrued per merchant.
+    uint16 public feeBps = 150;
+    uint16 public constant MAX_FEE_BPS = 1000;
+    mapping(address => uint256) public feesAccrued;
+    uint256 public totalFees;
+    uint256[3] public volumeByTerms;   // PREPAY, NET, CREDIT
+    uint256 public totalDefaulted;
 
     mapping(bytes32 => Mandate) public mandates;
     mapping(address => AgentStats) public stats;
@@ -59,6 +72,8 @@ contract A2ASettlementRegistry is AccessControl {
     event MandateSettled(bytes32 indexed mandateHash, address indexed payer, address indexed payee, address token, uint256 amount, uint8 terms, bytes32 hspFlowId, bytes32 paymentTx, bool onTime);
     event MandateDefaulted(bytes32 indexed mandateHash, address indexed payer, uint256 amount);
     event TrustUpdated(address indexed agent, uint256 score);
+    event FeeAccrued(bytes32 indexed mandateHash, address indexed merchant, uint256 fee);
+    event FeeUpdated(uint16 feeBps);
     event PolicyViolation(bytes32 indexed mandateHash, address indexed payer, uint256 amount);
 
     error MandateExists();
@@ -74,6 +89,16 @@ contract A2ASettlementRegistry is AccessControl {
 
     function setSpendingPolicy(address policy) external onlyRole(DEFAULT_ADMIN_ROLE) {
         spendingPolicy = ISpendingPolicy(policy);
+    }
+
+    function setReputationRegistry(address registry) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        reputation = IReputationRegistry(registry);
+    }
+
+    function setFeeBps(uint16 bps) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (bps > MAX_FEE_BPS) revert InvalidTerms();
+        feeBps = bps;
+        emit FeeUpdated(bps);
     }
 
     /// @notice Merchant agent extends deferred terms (NET or CREDIT) to a trusted payer.
@@ -149,6 +174,20 @@ contract A2ASettlementRegistry is AccessControl {
 
         totalSettled += 1;
         totalVolume += m.amount;
+        volumeByTerms[uint8(m.terms)] += m.amount;
+
+        // Credence earns on the terms it underwrites: deferred (NET / CREDIT) volume only.
+        if (m.terms != Terms.PREPAY && feeBps > 0) {
+            uint256 fee = (uint256(m.amount) * feeBps) / 10_000;
+            feesAccrued[m.payee] += fee;
+            totalFees += fee;
+            emit FeeAccrued(mandateHash, m.payee, fee);
+        }
+
+        // Feed the shared Credence reputation layer so other apps benefit from agent payment history.
+        if (onTime && address(reputation) != address(0)) {
+            try reputation.recordRepayment(m.payer, m.amount) {} catch {}
+        }
 
         // The payment already happened on HSP, so a policy breach is flagged, never hidden by a revert.
         if (address(spendingPolicy) != address(0)) {
@@ -171,6 +210,7 @@ contract A2ASettlementRegistry is AccessControl {
         AgentStats storage s = stats[m.payer];
         s.outstanding -= m.amount;
         s.defaultCount += 1;
+        totalDefaulted += m.amount;
 
         emit MandateDefaulted(mandateHash, m.payer, m.amount);
         emit TrustUpdated(m.payer, trustScore(m.payer));
@@ -216,6 +256,10 @@ contract A2ASettlementRegistry is AccessControl {
 
     function getMandate(bytes32 mandateHash) external view returns (Mandate memory) {
         return mandates[mandateHash];
+    }
+
+    function getVolumeByTerms() external view returns (uint256[3] memory) {
+        return volumeByTerms;
     }
 
     function getStats(address agent) external view returns (AgentStats memory) {
