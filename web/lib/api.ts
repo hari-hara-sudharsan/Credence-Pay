@@ -42,6 +42,20 @@ export type Business = {
   revenue_by_product: Record<string, number>;
 };
 
+export type WireEntry = { dir: "out" | "in"; kind: string; at: string; ms?: number | null; payload: any };
+
+export type AgentCard = {
+  protocolVersion: string;
+  name: string;
+  description: string;
+  url: string;
+  preferredTransport: string;
+  version: string;
+  capabilities: { extensions: { uri: string; description: string; required: boolean; params?: Record<string, any> }[] };
+  skills: { id: string; name: string; description: string; tags: string[] }[];
+  payment: { payTo: string; merchantName: string; rails: string[]; network: string; chainId: number };
+};
+
 export type Run = {
   id: string;
   persona?: string;
@@ -62,6 +76,10 @@ export type Run = {
   next_terms?: { terms: string; credit_limit: number; net_days: number };
   payment_status?: string;
   order?: { flow_id: string; payment_request_id?: string; payment_url?: string };
+  wire?: WireEntry[];
+  a2a?: { agent: string; endpoint: string; protocol: string; task_id?: string; context_id?: string };
+  anchor_tx?: string;
+  report?: Record<string, string | boolean>;
   reports?: { wallet: string; credit_score: number; rating?: string; probability_of_default?: number; segment?: string }[];
   created_at: string;
 };
@@ -95,6 +113,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  agentCard: () => req<AgentCard>("/.well-known/agent-card.json"),
   health: () => req<Record<string, any>>("/health"),
   agents: () => req<{ buyer: string; merchant: string; personas: Persona[] }>("/agents"),
   leaderboard: () => req<LeaderRow[]>("/agents/leaderboard"),
@@ -105,16 +124,20 @@ export const api = {
   network: () => req<Business["chain"]>("/network"),
   runs: () => req<Run[]>("/a2a/runs"),
   run: (id: string) => req<Run>(`/a2a/runs/${id}`),
-  start: (instruction: string, persona: string, rail: string) =>
-    req<Run>("/a2a/runs", { method: "POST", body: JSON.stringify({ instruction, persona, rail }) }),
+  start: (instruction: string, persona: string, rail: string, confirmed?: Record<string, string>) =>
+    req<Run>("/a2a/runs", { method: "POST", body: JSON.stringify({ instruction, persona, rail, confirmed }) }),
   approveSign: (id: string) => req<Run>(`/a2a/runs/${id}/approve-sign`, { method: "POST" }),
+  preflight: (persona: string, rail: string) =>
+    req<{ merchant_name: string; pay_to: string; payer: string; rail: string; network: string; chain_id: number; agent: string; confirmation_required: boolean }>(
+      `/a2a/preflight?persona=${persona}&rail=${rail}`,
+    ),
   approveSubmit: (id: string) => req<Run>(`/a2a/runs/${id}/approve-submit`, { method: "POST" }),
 };
 
 export const usd = (n: number | string | undefined, digits = 2) =>
   `$${Number(n ?? 0).toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
 export const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
-export const TERMS_COLOR: Record<string, string> = { PREPAY: "#ffbf5c", NET: "#7aa7ff", CREDIT: "#3ee6b0" };
+export const TERMS_COLOR: Record<string, string> = { PREPAY: "#ff9f0a", NET: "#64d2ff", CREDIT: "#30d158" };
 export const TERMS_LABEL: Record<string, string> = { PREPAY: "Prepay", NET: "Net 7", CREDIT: "Credit tab" };
 
 export const short = (v?: string | null, n = 6) => (v ? `${v.slice(0, n)}…${v.slice(-4)}` : "—");

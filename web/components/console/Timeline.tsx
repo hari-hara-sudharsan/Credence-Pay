@@ -1,10 +1,17 @@
 import {
-  Anchor, Brain, CircleAlert, Coins, FileSignature, Hourglass, PackageCheck, Radio, Send, Settings2, ShieldCheck, Store, UserCheck,
+  Anchor, BadgeCheck, Brain, Fingerprint, Network, Workflow, CircleAlert, Coins, FileSignature, Hourglass, PackageCheck, Radio, Send, Settings2, ShieldCheck, Store, UserCheck,
 } from "lucide-react";
 import { short, txUrl, type Run, type Step } from "@/lib/api";
 
 const META: Record<string, { icon: typeof Brain; actor: string }> = {
   intent: { icon: Brain, actor: "Payment agent" },
+  discover: { icon: Network, actor: "A2A · Agent Card" },
+  confirm: { icon: UserCheck, actor: "You" },
+  pending: { icon: Hourglass, actor: "Rail" },
+  identity: { icon: Fingerprint, actor: "A2A · payment agent" },
+  mandate: { icon: Workflow, actor: "A2A · Payment Mandate" },
+  verify_wait: { icon: Hourglass, actor: "Receiving agent" },
+  a2a_done: { icon: BadgeCheck, actor: "A2A task" },
   config: { icon: Settings2, actor: "Rail" },
   trust: { icon: ShieldCheck, actor: "Receiving agent" },
   order: { icon: Store, actor: "Receiving agent" },
