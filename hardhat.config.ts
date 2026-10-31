@@ -7,10 +7,15 @@ dotenv.config();
 export default defineConfig({
   plugins: [hardhatToolboxMochaEthers],
   solidity: {
-    version: "0.8.28",
-    settings: {
-      optimizer: { enabled: true, runs: 200 },
-      viaIR: true,
+    profiles: {
+      default: {
+        version: "0.8.28",
+        settings: { optimizer: { enabled: true, runs: 200 }, viaIR: true },
+      },
+      production: {
+        version: "0.8.28",
+        settings: { optimizer: { enabled: true, runs: 200 }, viaIR: true },
+      },
     },
   },
   paths: {
