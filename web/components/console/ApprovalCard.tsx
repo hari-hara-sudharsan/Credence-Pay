@@ -1,52 +1,56 @@
+import { FileSignature, Send } from "lucide-react";
 import { short, type Run } from "@/lib/api";
 
-export default function ApprovalCard({
-  run,
-  busy,
-  onApprove,
-}: {
-  run: Run;
-  busy: boolean;
-  onApprove: () => void;
-}) {
+export default function ApprovalCard({ run, busy, onApprove }: { run: Run; busy: boolean; onApprove: () => void }) {
   const waiting = [...run.steps].reverse().find((s) => s.status === "waiting");
   if (!waiting) return null;
   const d = waiting.data;
   const isSign = run.state === "awaiting_sign_approval";
+  const Icon = isSign ? FileSignature : Send;
   return (
-    <div className="rise rounded-xl border border-warn/50 bg-warn/5 p-4">
-      <div className="flex items-center gap-2 text-sm font-medium text-warn">
-        <span className="pulse size-2 rounded-full bg-warn" />
-        {isSign ? "Approve signature" : "Approve submission"}
+    <div className="rise glass ring-accent overflow-hidden">
+      <div className="border-b border-line bg-gradient-to-r from-warn/10 to-transparent px-5 py-3">
+        <div className="flex items-center gap-2 text-sm font-semibold text-warn">
+          <span className="size-2 rounded-full bg-warn pulse" />
+          {isSign ? "Your approval: sign" : "Your approval: submit"}
+        </div>
+        <p className="mt-1 text-xs text-dim">
+          {isSign
+            ? run.terms && run.terms !== "PREPAY"
+              ? "Goods are already delivered on trusted terms. Sign now, or leave the tab open and pay later."
+              : "The payment agent will sign exactly the EIP-712 authorisation the rail returned. Nothing is signed yet."
+            : "The signed payment mandate is ready. Nothing moves until you submit it."}
+        </p>
       </div>
-      <p className="mt-1 text-xs text-dim">
-        {isSign
-          ? "The payment agent will sign exactly the EIP-712 authorisation HSP returned. Nothing has been signed yet."
-          : "The signed Payment Mandate is ready. Nothing moves until you submit it to the HSP Gateway."}
-      </p>
-      <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 font-mono text-xs">
-        <dt className="text-dim">Recipient</dt>
-        <dd className="truncate" title={d.recipient}>{short(d.recipient, 10)}</dd>
-        <dt className="text-dim">Payer</dt>
-        <dd className="truncate" title={d.payer}>{short(d.payer, 10)}</dd>
-        <dt className="text-dim">token_total_raw</dt>
-        <dd>
-          {d.token_total_raw} <span className="text-faint">(≈ {d.token_total} {d.coin}, raw units)</span>
-        </dd>
-        {d.quote_expires_at && (
-          <>
-            <dt className="text-dim">Quote expires</dt>
-            <dd>{new Date(d.quote_expires_at).toLocaleTimeString()}</dd>
-          </>
-        )}
-      </dl>
-      <button
-        onClick={onApprove}
-        disabled={busy}
-        className="mt-4 w-full rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-ink transition hover:brightness-110 disabled:opacity-50"
-      >
-        {busy ? "Working…" : isSign ? "Approve & sign" : "Approve & submit to HSP"}
-      </button>
+      <div className="px-5 py-4">
+        <div className="text-center">
+          <div className="eyebrow">Amount</div>
+          <div className="mt-1 font-display text-4xl font-semibold tabular-nums">
+            {d.token_total} <span className="text-lg text-dim">{d.coin}</span>
+          </div>
+          <div className="mt-1 font-mono text-[11px] text-faint">{d.token_total_raw} raw units</div>
+        </div>
+        <dl className="mt-4 space-y-2 font-mono text-xs">
+          <div className="flex justify-between gap-2">
+            <dt className="text-dim">Recipient</dt>
+            <dd title={d.recipient}>{short(d.recipient, 10)}</dd>
+          </div>
+          <div className="flex justify-between gap-2">
+            <dt className="text-dim">Payer</dt>
+            <dd title={d.payer}>{short(d.payer, 10)}</dd>
+          </div>
+          {d.quote_expires_at && (
+            <div className="flex justify-between gap-2">
+              <dt className="text-dim">Quote expires</dt>
+              <dd>{new Date(d.quote_expires_at).toLocaleTimeString()}</dd>
+            </div>
+          )}
+        </dl>
+        <button onClick={onApprove} disabled={busy} className="btn-primary mt-5 w-full">
+          <Icon className="size-4" />
+          {busy ? "Working…" : isSign ? "Approve & sign" : "Approve & submit"}
+        </button>
+      </div>
     </div>
   );
 }

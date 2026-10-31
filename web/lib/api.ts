@@ -10,8 +10,46 @@ export type Step = {
   at: string;
 };
 
+export type Persona = {
+  id: string;
+  name: string;
+  tagline: string;
+  owner: string;
+  color: string;
+  address: string;
+};
+
+export type LeaderRow = Persona & Trust;
+
+export type Business = {
+  chain: {
+    total_settled: number;
+    total_volume: number;
+    volume_by_terms: { PREPAY: number; NET: number; CREDIT: number };
+    total_fees: number;
+    total_defaulted: number;
+    fee_bps: number;
+  };
+  merchant_revenue_usd: number;
+  credence_fees_usd: number;
+  deferred_share: number;
+  default_rate: number;
+  runs_started: number;
+  runs_settled: number;
+  policy_blocks: number;
+  open_tabs: number;
+  open_tab_usd: number;
+  revenue_by_product: Record<string, number>;
+};
+
 export type Run = {
   id: string;
+  persona?: string;
+  persona_name?: string;
+  rail?: "sandbox" | "hsp";
+  total_usd?: string;
+  product?: string;
+  seeded?: boolean;
   instruction: string;
   state: "running" | "awaiting_sign_approval" | "awaiting_submit_approval" | "settling" | "settled" | "failed";
   steps: Step[];
@@ -58,15 +96,26 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   health: () => req<Record<string, any>>("/health"),
-  agents: () => req<{ buyer: string; merchant: string }>("/agents"),
+  agents: () => req<{ buyer: string; merchant: string; personas: Persona[] }>("/agents"),
+  leaderboard: () => req<LeaderRow[]>("/agents/leaderboard"),
+  business: () => req<Business>("/business"),
+  catalog: () => req<{ id: string; label: string; price_usd: string }[]>("/catalog"),
+  hspStatus: () => req<{ reachable: boolean; reason?: string; tools?: string[] }>("/hsp/status"),
   trust: (address: string) => req<Trust>(`/agents/${address}/trust`),
-  network: () => req<{ total_settled: number; total_volume: number }>("/network"),
+  network: () => req<Business["chain"]>("/network"),
   runs: () => req<Run[]>("/a2a/runs"),
   run: (id: string) => req<Run>(`/a2a/runs/${id}`),
-  start: (instruction: string) => req<Run>("/a2a/runs", { method: "POST", body: JSON.stringify({ instruction }) }),
+  start: (instruction: string, persona: string, rail: string) =>
+    req<Run>("/a2a/runs", { method: "POST", body: JSON.stringify({ instruction, persona, rail }) }),
   approveSign: (id: string) => req<Run>(`/a2a/runs/${id}/approve-sign`, { method: "POST" }),
   approveSubmit: (id: string) => req<Run>(`/a2a/runs/${id}/approve-submit`, { method: "POST" }),
 };
+
+export const usd = (n: number | string | undefined, digits = 2) =>
+  `$${Number(n ?? 0).toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+export const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
+export const TERMS_COLOR: Record<string, string> = { PREPAY: "#ffbf5c", NET: "#7aa7ff", CREDIT: "#3ee6b0" };
+export const TERMS_LABEL: Record<string, string> = { PREPAY: "Prepay", NET: "Net 7", CREDIT: "Credit tab" };
 
 export const short = (v?: string | null, n = 6) => (v ? `${v.slice(0, n)}…${v.slice(-4)}` : "—");
 export const txUrl = (tx: string) => `${EXPLORER}/tx/${tx}`;

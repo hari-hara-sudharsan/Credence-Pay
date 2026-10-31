@@ -121,6 +121,27 @@ class TrustRegistry:
         )
         return self._send(fn)
 
+    def overdue_tabs(self, lookback_blocks: int = 99_000) -> list[dict]:
+        """Open tabs past their due date, found from TabOpened events and current mandate state.
+
+        The public RPC caps log queries at 100k blocks, so only recent tabs are scanned.
+        """
+        import time
+        from_block = max(0, self.w3.eth.block_number - lookback_blocks)
+        logs = self.registry.events.TabOpened.get_logs(from_block=from_block)
+        now = int(time.time())
+        overdue = []
+        for log in logs:
+            h = log["args"]["mandateHash"]
+            m = self.registry.functions.getMandate(h).call()
+            status, due_at = m[8], m[5]
+            if status == 1 and due_at < now:  # Status.OPEN
+                overdue.append({"mandate_hash": "0x" + h.hex(), "payer": m[0], "amount": m[3] / 1e6, "due_at": due_at})
+        return overdue
+
+    def mark_default(self, mandate_hash: str) -> str:
+        return self._send(self.registry.functions.markDefault(to_bytes32(mandate_hash)))
+
     def _send(self, fn) -> str:
         tx = fn.build_transaction({
             "from": self.settler.address,

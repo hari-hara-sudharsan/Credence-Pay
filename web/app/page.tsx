@@ -1,91 +1,185 @@
+"use client";
+
 import Link from "next/link";
-import NetworkStats from "@/components/NetworkStats";
+import { useEffect, useState } from "react";
+import { ArrowRight, Coins, Landmark, Lock, ShieldCheck, Sparkles, TrendingUp, Users, Zap } from "lucide-react";
+import HeroDiagram from "@/components/HeroDiagram";
+import { AgentAvatar, SectionHead, TermsBadge, TrustBar } from "@/components/ui";
+import { api, usd, type Business, type LeaderRow } from "@/lib/api";
 
-const FLOW = [
-  ["Intent", "A lending agent is told to buy a risk report before it lends."],
-  ["Trust check", "The receiving agent reads the payer's on-chain record and picks the terms."],
-  ["Cart Mandate", "An HSP order is created with the payment conditions."],
-  ["Policy + approval", "The payer checks its owner's on-chain limits; a human approves."],
-  ["Payment Mandate", "EIP-712 authorisation signed and finalized through HSP."],
-  ["Settle + remember", "HSP Gateway settles; Credence anchors it and raises trust."],
-];
-
-const TERMS = [
-  ["Prepay", "New or unproven agents pay before delivery.", "trust < 560"],
-  ["Net 7", "Reliable agents receive goods first and pay within 7 days.", "560 – 699"],
-  ["Credit tab", "Proven agents run an open tab of up to 225 USD for 30 days.", "≥ 700"],
+const STEPS = [
+  { icon: Sparkles, title: "Intent", body: "The payment agent is told what to buy and its budget, in plain language." },
+  { icon: ShieldCheck, title: "Trust check", body: "The receiving agent reads the payer's on-chain record and sets the terms." },
+  { icon: Coins, title: "Order", body: "An HSP cart mandate carries the payment conditions." },
+  { icon: Lock, title: "Policy + approval", body: "The owner's on-chain limits are checked, then a human approves twice." },
+  { icon: Zap, title: "Settle", body: "EIP-712 authorisation, settled through HSP on HSK Chain." },
+  { icon: TrendingUp, title: "Remember", body: "Credence anchors the payment; trust and future terms update." },
 ];
 
 export default function Home() {
+  const [stats, setStats] = useState<Business | null>(null);
+  const [agents, setAgents] = useState<LeaderRow[]>([]);
+
+  useEffect(() => {
+    api.business().then(setStats).catch(() => {});
+    api.leaderboard().then(setAgents).catch(() => {});
+  }, []);
+
   return (
     <main>
-      <section className="relative overflow-hidden">
-        <div className="grid-bg absolute inset-0 -z-10 opacity-60" />
-        <div className="mx-auto max-w-6xl px-4 pt-20 pb-16">
-          <p className="text-sm font-medium text-accent">HSK Chain · HSP Agentic Payment</p>
-          <h1 className="mt-3 max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
-            HSP lets agents pay each other. Credence decides on what terms.
-          </h1>
-          <p className="mt-5 max-w-2xl text-lg text-dim">
-            When two AI agents trade, neither knows if the other will pay. Credence turns every HSP settlement into on-chain trust, so
-            reliable agents move from prepay to net terms to credit, inside limits their human owners set.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/console" className="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-accent-ink hover:brightness-110">
-              Open the Agent Console
-            </Link>
-            <Link href="/developers" className="rounded-lg border border-line px-5 py-2.5 text-sm hover:border-dim">
-              How it works
-            </Link>
+      {/* hero */}
+      <section className="relative">
+        <div className="grid-bg absolute inset-0 -z-10" />
+        <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 pt-16 pb-20 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:pt-24">
+          <div className="rise">
+            <span className="inline-flex items-center gap-2 rounded-full border border-line bg-white/[0.03] px-3 py-1 text-xs text-dim">
+              <span className="size-1.5 rounded-full bg-accent pulse" /> Built on HSK Chain · HSP Agentic Payment
+            </span>
+            <h1 className="mt-6 font-display text-5xl leading-[1.05] font-semibold tracking-tight sm:text-6xl">
+              Credit terms <br />
+              <span className="text-gradient">for AI agents.</span>
+            </h1>
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-dim">
+              HSP lets agents pay each other. Credence decides on what terms. Every settlement becomes on-chain trust, so reliable
+              agents move from prepay to net terms to credit, inside limits their human owners set.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/console" className="btn-primary">
+                Run a live agent purchase <ArrowRight className="size-4" />
+              </Link>
+              <Link href="/business" className="btn-ghost">
+                See the business
+              </Link>
+            </div>
+            <dl className="mt-12 grid max-w-lg grid-cols-3 gap-6">
+              {[
+                ["Settlements on-chain", stats ? stats.chain.total_settled : "—"],
+                ["Volume settled", stats ? usd(stats.chain.total_volume) : "—"],
+                ["Credence fees earned", stats ? usd(stats.credence_fees_usd, 3) : "—"],
+              ].map(([k, v]) => (
+                <div key={k as string}>
+                  <dt className="text-xs text-faint">{k}</dt>
+                  <dd className="mt-1 font-display text-2xl font-semibold tabular-nums">{v}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
-          <NetworkStats />
+          <div className="rise" style={{ animationDelay: "120ms" }}>
+            <HeroDiagram />
+          </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-14">
-        <h2 className="text-sm font-medium tracking-wide text-dim uppercase">One purchase, end to end</h2>
-        <ol className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {FLOW.map(([title, body], i) => (
-            <li key={title} className="panel p-5">
-              <span className="font-mono text-xs text-accent">0{i + 1}</span>
-              <h3 className="mt-2 font-medium">{title}</h3>
-              <p className="mt-1 text-sm text-dim">{body}</p>
+      {/* problem */}
+      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-1">
+            <SectionHead eyebrow="The problem" title="Every agent is a stranger." body="When two AI agents trade, the seller has no way to know whether the buyer will pay." />
+          </div>
+          {[
+            ["Prepay everything", "Safe, but every purchase waits on payment first and good customers never earn better treatment.", "#ffbf5c"],
+            ["Trust blindly", "Fast, until one bad agent walks away with the goods. There is no record to check.", "#ff6b81"],
+          ].map(([t, b, c]) => (
+            <div key={t} className="glass p-6">
+              <div className="h-1 w-10 rounded-full" style={{ background: c }} />
+              <h3 className="mt-4 font-display text-lg font-semibold">{t}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-dim">{b}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* same order, different terms */}
+      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
+        <SectionHead
+          eyebrow="Live on HSK testnet"
+          title="Same order. Different terms."
+          body="Four agents with real on-chain payment histories ask the Credence Risk Agent for the same report. Their trust decides what they are offered."
+          right={
+            <Link href="/agents" className="btn-ghost">
+              <Users className="size-4" /> All agents
+            </Link>
+          }
+        />
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {(agents.length ? agents : Array.from<LeaderRow | undefined>({ length: 4 })).map((a, i) =>
+            a ? (
+              <Link key={a.id} href={`/agents/${a.address}`} className="glass glass-hover block p-5">
+                <div className="flex items-center gap-3">
+                  <AgentAvatar name={a.name} color={a.color} />
+                  <div className="min-w-0">
+                    <div className="truncate font-medium">{a.name}</div>
+                    <div className="truncate text-xs text-faint">{a.tagline}</div>
+                  </div>
+                </div>
+                <div className="mt-5"><TrustBar score={a.trust_score} /></div>
+                <div className="mt-4 flex items-center justify-between text-xs text-dim">
+                  <TermsBadge terms={a.terms.terms} />
+                  <span>{a.stats.settled_count} settled</span>
+                </div>
+              </Link>
+            ) : (
+              <div key={i} className="glass h-40 p-5"><div className="shimmer h-full" /></div>
+            ),
+          )}
+        </div>
+      </section>
+
+      {/* how */}
+      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
+        <SectionHead eyebrow="How it works" title="One purchase, end to end." />
+        <ol className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {STEPS.map(({ icon: Icon, title, body }, i) => (
+            <li key={title} className="glass p-6">
+              <div className="flex items-center justify-between">
+                <span className="grid size-10 place-items-center rounded-xl bg-accent/10 text-accent">
+                  <Icon className="size-5" />
+                </span>
+                <span className="font-mono text-xs text-faint">0{i + 1}</span>
+              </div>
+              <h3 className="mt-4 font-display text-lg font-semibold">{title}</h3>
+              <p className="mt-1 text-sm leading-relaxed text-dim">{body}</p>
             </li>
           ))}
         </ol>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 pb-14">
-        <h2 className="text-sm font-medium tracking-wide text-dim uppercase">Trust unlocks terms</h2>
-        <div className="mt-6 grid gap-3 md:grid-cols-3">
-          {TERMS.map(([title, body, band]) => (
-            <div key={title} className="panel p-5">
-              <div className="flex items-baseline justify-between">
-                <h3 className="font-medium">{title}</h3>
-                <span className="font-mono text-xs text-faint">{band}</span>
-              </div>
-              <p className="mt-2 text-sm text-dim">{body}</p>
+      {/* business */}
+      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
+        <div className="glass relative overflow-hidden p-8 sm:p-12">
+          <div className="absolute -top-24 -right-24 size-72 rounded-full bg-violet/20 blur-3xl" />
+          <div className="relative grid gap-10 lg:grid-cols-[1.2fr_1fr]">
+            <div>
+              <div className="eyebrow text-accent">The business</div>
+              <h2 className="mt-2 font-display text-3xl font-semibold tracking-tight">Credence earns when trust earns.</h2>
+              <p className="mt-3 text-dim">
+                Merchants grant net and credit terms because Credence prices the risk. Credence takes a fee, enforced on-chain, on every
+                deferred-terms settlement it underwrites. Reads of the trust score stay free, so the standard spreads.
+              </p>
+              <Link href="/business" className="btn-primary mt-6">
+                Open the business dashboard <ArrowRight className="size-4" />
+              </Link>
             </div>
-          ))}
-        </div>
-        <p className="mt-4 text-sm text-faint">
-          Score is computed on-chain from settlement history: +15 per on-time payment, up to +100 for volume, −40 per late payment,
-          −150 per default. Any default forces prepay.
-        </p>
-      </section>
-
-      <section className="mx-auto max-w-6xl px-4 pb-20">
-        <div className="panel grid gap-6 p-6 md:grid-cols-3">
-          {[
-            ["Human in control", "Owners set daily and per-payment caps, allowed merchants, expiry and a pause switch on-chain. Every payment is also approved twice."],
-            ["Nothing hidden", "Every settlement is anchored with its HSP flow ID and transaction hash. Policy breaches are recorded, never silently dropped."],
-            ["Composable trust", "Any agent or protocol can read trustScore() and termsFor() to price counterparties. One record, every market."],
-          ].map(([t, b]) => (
-            <div key={t}>
-              <h3 className="font-medium">{t}</h3>
-              <p className="mt-1 text-sm text-dim">{b}</p>
-            </div>
-          ))}
+            <ul className="space-y-3">
+              {[
+                [Coins, "1.5% fee on deferred-terms volume", "accrued on-chain per merchant"],
+                [Landmark, "Pool-backed credit tabs", "the spread on capital Credence lends"],
+                [ShieldCheck, "Risk intelligence over HSP", "reports sold agent-to-agent"],
+                [Users, "Trust API for agent platforms", "per-check pricing at scale"],
+              ].map(([Icon, t, b]) => {
+                const I = Icon as typeof Coins;
+                return (
+                  <li key={t as string} className="flex gap-3 rounded-xl border border-line bg-white/[0.02] p-4">
+                    <I className="mt-0.5 size-5 shrink-0 text-accent" />
+                    <div>
+                      <div className="text-sm font-medium">{t as string}</div>
+                      <div className="text-xs text-dim">{b as string}</div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         </div>
       </section>
     </main>

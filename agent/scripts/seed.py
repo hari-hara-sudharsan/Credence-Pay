@@ -46,21 +46,31 @@ def report(persona: str, run: dict):
 
 
 async def seed_default(persona: str):
-    """A deferred tab the agent never pays: opened with a short due date, then marked defaulted on-chain."""
+    """A deferred tab the agent never pays: opened with a short due date, then swept into default on-chain."""
+    import secrets
     from eth_account import Account
     from app.config import settings
     reg = TrustRegistry()
     payer = Account.from_key(persona_key(persona)).address
     merchant = Account.from_key(settings.merchant_agent_key).address
-    h = "0x" + Account.create().key.hex()[2:]
-    reg.open_tab(h, payer, merchant, settings.test_usd_address, 6_000_000, "NET", int(time.time()) + 20)
-    print(f"  {persona}: opened 6.00 cUSD NET tab due in 20 s, never paid…")
+    reg.open_tab("0x" + secrets.token_hex(32), payer, merchant, settings.test_usd_address, 6_000_000, "NET", int(time.time()) + 20)
+    print(f"  {persona}: opened 6.00 cUSD NET tab due in 20 s, never paid...")
     time.sleep(30)
-    fn = reg.registry.functions.markDefault(bytes.fromhex(h[2:]))
-    print(f"  {persona}: markDefault tx {reg._send(fn)}  → trust now {reg.trust_score_after(payer, -1)}")
+    await sweep()
 
 
-async def main(one: bool):
+async def sweep():
+    """Collections: mark every overdue tab as defaulted (permissionless once overdue)."""
+    reg = TrustRegistry()
+    for tab in reg.overdue_tabs():
+        tx = reg.mark_default(tab["mandate_hash"])
+        print(f"  defaulted {tab['amount']:.2f} cUSD tab of {tab['payer']}  tx {tx}  -> trust {reg.trust_score_after(tab['payer'], -1)}")
+
+
+async def main(one: bool, sweep_only: bool = False):
+    if sweep_only:
+        await sweep()
+        return
     if one:
         report("nova", await purchase("nova", 0))
         return
@@ -75,4 +85,6 @@ async def main(one: bool):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--one", action="store_true")
-    asyncio.run(main(ap.parse_args().one))
+    ap.add_argument("--sweep", action="store_true", help="only mark overdue tabs as defaulted")
+    args = ap.parse_args()
+    asyncio.run(main(args.one, args.sweep))
