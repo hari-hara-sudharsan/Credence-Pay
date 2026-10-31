@@ -11,10 +11,21 @@ app = FastAPI(title="Credence A2A Agent", version="2.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
+def _merchant_service():
+    from app.a2a.merchant_service import service
+    return service()
+
+
+from app.a2a.server import make_router  # noqa: E402
+
+app.include_router(make_router(_merchant_service))
+
+
 class RunRequest(BaseModel):
     instruction: str
     persona: str = "nova"
     rail: str | None = None
+    confirmed: dict | None = None   # merchant_name, pay_to, payer as confirmed by the user (required on the HSP rail)
 
 
 def _registry():
@@ -55,18 +66,51 @@ def health():
         "coin": settings.hsp_coin,
         "contracts": {"registry": settings.registry_address, "policy": settings.policy_address, "test_usd": settings.test_usd_address},
         "llm": bool(settings.groq_api_key),
+        "a2a": {"agent_card": "/.well-known/agent-card.json", "endpoint": "/a2a",
+                "merchant_agent_url": settings.merchant_agent_url or "in-process"},
     }
 
 
 @app.get("/hsp/status")
 async def hsp_status():
     """Whether this machine can reach the HSP MCP server (requires IP allowlisting)."""
+    import httpx
     from app.hsp.mcp_client import HSPAgenticPayment
+    health = None
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(settings.hsp_mcp_url.rstrip("/") + "/health")
+            health = r.json() if r.status_code == 200 else {"http_status": r.status_code}
+    except Exception as exc:
+        health = {"error": type(exc).__name__}
     try:
         tools = await HSPAgenticPayment(settings.hsp_mcp_url).schemas()
-        return {"reachable": True, "tools": sorted(tools)}
+        return {"reachable": True, "health": health, "tools": sorted(tools)}
     except Exception as exc:
-        return {"reachable": False, "reason": str(exc)[:300]}
+        return {"reachable": False, "health": health, "reason": _flatten(exc)[:400], **_diagnose(exc)}
+
+
+def _flatten(exc: BaseException) -> str:
+    """MCP errors arrive wrapped in ExceptionGroups; surface the innermost messages."""
+    subs = getattr(exc, "exceptions", None)
+    if subs:
+        return "; ".join(_flatten(e) for e in subs)
+    return f"{type(exc).__name__}: {exc}" + (f" <- {_flatten(exc.__cause__)}" if exc.__cause__ else "")
+
+
+def _diagnose(exc: BaseException) -> dict:
+    text = _flatten(exc).lower()
+    if "certificate" in text or "ssl" in text:
+        return {"cause": "tls_interception",
+                "hint": ("TLS to the HSP server could not be verified. A firewall or proxy on this network "
+                         "(for example a FortiGate doing SSL inspection) is replacing HSP's certificate. Run the "
+                         "agent from a network without SSL inspection, such as a mobile hotspot or a cloud VM, "
+                         "and have that machine's public IP allowlisted by HSP.")}
+    if "403" in text or "forbidden" in text or "401" in text:
+        return {"cause": "not_allowlisted", "hint": "HSP rejected this machine. Ask HSP Operations to allowlist its public IP."}
+    if "timed out" in text or "timeout" in text or "connect" in text:
+        return {"cause": "unreachable", "hint": "HSP server unreachable from this machine (network or allowlist)."}
+    return {"cause": "unknown"}
 
 
 # --- A2A runs: start -> approve sign -> approve submit -> poll ---
@@ -83,7 +127,17 @@ async def start_run(req: RunRequest):
         flow = A2AFlow(req.persona, req.rail)
     except KeyError as exc:
         raise HTTPException(400, str(exc))
-    return await flow.start(req.instruction)
+    return await flow.start(req.instruction, req.confirmed)
+
+
+@app.get("/a2a/preflight")
+async def preflight(persona: str = "nova", rail: str | None = None):
+    """Values the user confirms before an order is created (HSP guide, step 6)."""
+    from app.agents.a2a_flow import A2AFlow
+    try:
+        return await A2AFlow(persona, rail).preflight()
+    except KeyError as exc:
+        raise HTTPException(400, str(exc))
 
 
 @app.get("/a2a/runs")

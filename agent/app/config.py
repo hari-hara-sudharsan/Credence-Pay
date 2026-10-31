@@ -26,6 +26,7 @@ class Settings:
     policy_address: str | None
     test_usd_address: str | None     # Credence Test USD for the sandbox rail
     default_rail: str                # "sandbox" | "hsp"
+    merchant_agent_url: str | None  # remote receiving agent (A2A); unset = hosted in this process
     groq_api_key: str | None
     groq_model: str
     data_dir: Path
@@ -38,7 +39,7 @@ def load_settings() -> Settings:
     return Settings(
         network=network,
         hsp_mcp_url=os.getenv("HSP_MCP_URL", "https://mcp-qa.hashkeymerchant.com/"),
-        hsp_team_name=os.getenv("HSP_TEAM_NAME", "Credence"),
+        hsp_team_name=os.getenv("HSP_TEAM_NAME", "Credence7"),
         hsp_coin=os.getenv("HSP_COIN", "USDC"),
         merchant_agent_key=os.getenv("MERCHANT_AGENT_KEY"),
         buyer_agent_key=os.getenv("BUYER_AGENT_KEY"),
@@ -46,6 +47,7 @@ def load_settings() -> Settings:
         policy_address=os.getenv("SPENDING_POLICY_ADDRESS"),
         test_usd_address=os.getenv("TEST_USD_ADDRESS"),
         default_rail=os.getenv("DEFAULT_RAIL", "sandbox"),
+        merchant_agent_url=os.getenv("MERCHANT_AGENT_URL") or None,
         groq_api_key=os.getenv("GROQ_API_KEY"),
         groq_model=os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
         data_dir=data_dir,

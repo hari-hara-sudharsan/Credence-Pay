@@ -41,7 +41,7 @@ class HSPAgenticPayment:
         if self._schemas is None:
             async with self._session() as s:
                 tools = (await s.list_tools()).tools
-            self._schemas = {t.name.split("__")[-1].split(".")[-1]: {"name": t.name, "schema": t.inputSchema or {}, "description": t.description} for t in tools}
+            self._schemas = {t.name.split("__")[-1].split(".")[-1]: {"name": t.name, "schema": _input_schema(t), "description": t.description} for t in tools}
             missing = REQUIRED_TOOLS - set(self._schemas)
             if missing:
                 raise HSPToolError("list_tools", f"HSP MCP server is missing required tools: {sorted(missing)}")
@@ -57,6 +57,11 @@ class HSPAgenticPayment:
         if getattr(result, "is_error", False):
             raise HSPToolError(tool, _error_text(payload), payload)
         return payload
+
+
+def _input_schema(tool) -> dict:
+    """MCP SDK 1.x names the field inputSchema; 2.x names it input_schema."""
+    return getattr(tool, "input_schema", None) or getattr(tool, "inputSchema", None) or {}
 
 
 def fit_arguments(tool: str, schema: dict, candidates: dict) -> dict:

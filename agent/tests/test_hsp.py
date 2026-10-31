@@ -83,7 +83,8 @@ def _eip712(payer, pay_to, value):
 class FakeHSP:
     def __init__(self, payer, pay_to):
         self.payer, self.pay_to, self.calls, self.signature = payer, pay_to, [], None
-        self.statuses = ["payment-processing", "payment-finalized"]
+        # payment agent polls twice; the receiving agent then re-verifies independently
+        self.statuses = ["payment-processing", "payment-finalized", "payment-finalized"]
 
     async def call(self, tool, args):
         self.calls.append((tool, args))
@@ -156,7 +157,10 @@ def flow(monkeypatch, tmp_path):
     import app.agents.a2a_flow as af
     import app.agents.buyer_agent as ba
     import app.agents.merchant_agent as ma
-    for mod in (ba, ma, af):
+    import app.a2a.protocol as proto
+    import app.a2a.merchant_service as ms
+    from app.a2a.client import A2AClient
+    for mod in (ba, ma, af, proto, ms):
         monkeypatch.setattr(mod, "settings", config.settings)
     monkeypatch.setattr(af, "store", af.RunStore())
 
@@ -167,12 +171,19 @@ def flow(monkeypatch, tmp_path):
     f.persona, f.rail, f.rail_label = "nova", "hsp", "HSP"
     f.merchant.deliver = lambda product, targets: [{"wallet": t, "credit_score": 700} for t in targets]
     f.hsp = FakeHSP(buyer.address, merchant.address)
+    f.service = ms.MerchantService(registry=f.registry, merchant=f.merchant, rail_override=f.hsp)
+    f.peer = A2AClient.in_process(f.service)
     return f, buyer
+
+
+def _confirmed(f):
+    from app.agents import a2a_flow as af
+    return {"merchant_name": af.settings.hsp_team_name, "pay_to": f.merchant.address, "payer": f.buyer.address}
 
 
 def test_full_a2a_flow_with_two_human_approvals(flow):
     f, buyer = flow
-    run = asyncio.run(f.start("Buy a risk report for 0x2988f0bE02e1a679430aEb4A6B9B10429F1e8e80 under $1"))
+    run = asyncio.run(f.start("Buy a risk report for 0x2988f0bE02e1a679430aEb4A6B9B10429F1e8e80 under $1", _confirmed(f)))
     assert run["state"] == "awaiting_sign_approval", run["steps"][-1]
     assert run["steps"][-1]["data"]["token_total_raw"] == "200000"
     assert f.hsp.signature is None  # nothing signed before approval
@@ -189,17 +200,24 @@ def test_full_a2a_flow_with_two_human_approvals(flow):
     assert run["state"] == "settling"  # processing: keep polling
     run = asyncio.run(f.refresh(run["id"]))
     assert run["state"] == "settled"
-    assert run["trust_after"] == 515 and f.registry.settled == ["0x" + "ab" * 32]
+    assert run["report"]["Payment status"] == "payment-finalized" and run["report"]["Team attribution verified"] is True
+    assert run["steps"][-1]["key"] == "a2a_done"
+    assert run["trust_after"] == 515 and f.registry.settled == [run["mandate_hash"]]
+    # the whole conversation went over A2A JSON-RPC
+    methods = [w["kind"] for w in run["wire"] if w["dir"] == "out"]
+    assert methods == ["GET agent-card", "message/send", "message/send", "message/send"]
+    assert f.service.store.get(run["a2a"]["task_id"])["status"]["state"] == "completed"
     assert run["reports"][0]["credit_score"] == 700
 
     query = [a for t, a in f.hsp.calls if t == "query_payment"][0]
-    assert query["expected_merchant_name"] == "Credence"
+    from app.agents import a2a_flow as af
+    assert query["expected_merchant_name"] == af.settings.hsp_team_name
 
 
 def test_spending_policy_blocks_before_any_signature(flow):
     f, _ = flow
     f.registry.allow = False
-    run = asyncio.run(f.start("Buy a risk report for 0x2988f0bE02e1a679430aEb4A6B9B10429F1e8e80"))
+    run = asyncio.run(f.start("Buy a risk report for 0x2988f0bE02e1a679430aEb4A6B9B10429F1e8e80", _confirmed(f)))
     assert run["state"] == "failed"
     assert "exceeds daily cap" in run["steps"][-1]["detail"]
     assert f.hsp.signature is None
@@ -207,6 +225,60 @@ def test_spending_policy_blocks_before_any_signature(flow):
 
 def test_approvals_must_happen_in_order(flow):
     f, _ = flow
-    run = asyncio.run(f.start("Buy a risk report for 0x2988f0bE02e1a679430aEb4A6B9B10429F1e8e80"))
+    run = asyncio.run(f.start("Buy a risk report for 0x2988f0bE02e1a679430aEb4A6B9B10429F1e8e80", _confirmed(f)))
     with pytest.raises(ValueError):
         asyncio.run(f.approve_submit(run["id"]))
+
+
+# ---------------- A2A protocol ----------------
+
+def test_agent_card_advertises_ap2_and_skills(flow):
+    f, _ = flow
+    card = asyncio.run(f.peer.card())
+    assert card["protocolVersion"] == "0.3.0" and card["preferredTransport"] == "JSONRPC"
+    assert any(e["uri"].startswith("https://github.com/google-agentic-commerce/ap2") and e["required"] for e in card["capabilities"]["extensions"])
+    assert {s["id"] for s in card["skills"]} == {"risk_report", "trust_attestation", "portfolio_scan"}
+    assert card["payment"]["payTo"] == f.merchant.address
+
+
+def test_impersonating_a_trusted_payer_is_rejected(flow):
+    """An agent cannot claim another wallet's trust: the quote needs that wallet's signature."""
+    f, _ = flow
+    from app.a2a import protocol as p
+    impostor, victim = Account.create(), Account.create()
+    proof = p.sign_identity(impostor.key.hex(), "ctx_x")
+    task = asyncio.run(f.peer.send([
+        p.data_part(p.QUOTE_REQUEST, {"product": "risk_report", "targets": ["0x2988f0bE02e1a679430aEb4A6B9B10429F1e8e80"],
+                                      "payer": victim.address, "rail": "hsp", "token": TOKEN}),
+        p.data_part(p.IDENTITY, {**proof, "payer": victim.address})], context_id="ctx_x"))
+    assert task["status"]["state"] == "rejected"
+    assert not any(t == "create_order" for t, _ in f.hsp.calls)
+
+
+def test_receiving_agent_does_not_anchor_on_payer_word(flow):
+    f, _ = flow
+    f.hsp.statuses = ["payment-processing"]
+    run = asyncio.run(f.start("Buy a risk report for 0x2988f0bE02e1a679430aEb4A6B9B10429F1e8e80", _confirmed(f)))
+    from app.a2a import protocol as p
+    task = asyncio.run(f.peer.send([p.data_part(p.SETTLEMENT_NOTICE, {"flow_id": run["order"]["flow_id"], "tx": "0xfake"})],
+                                   task_id=run["a2a"]["task_id"], context_id=run["a2a"]["context_id"]))
+    assert task["status"]["state"] == "working"
+    assert f.registry.settled == []
+
+
+def test_unknown_rpc_method_returns_jsonrpc_error(flow):
+    f, _ = flow
+    from app.a2a.client import A2AError
+    with pytest.raises(A2AError, match="-32601"):
+        asyncio.run(f.peer.rpc("tasks/cancel", {"id": "x"}))
+
+
+def test_hsp_order_needs_user_confirmation_of_team_recipient_and_payer(flow):
+    """HSP guide step 6: merchant_name, pay_to and payer are confirmed before create_order."""
+    f, _ = flow
+    run = asyncio.run(f.start("Buy a risk report for 0x2988f0bE02e1a679430aEb4A6B9B10429F1e8e80"))
+    assert run["state"] == "failed" and "not confirmed" in run["steps"][-1]["detail"]
+    wrong = {**_confirmed(f), "pay_to": Account.create().address}
+    run = asyncio.run(f.start("Buy a risk report for 0x2988f0bE02e1a679430aEb4A6B9B10429F1e8e80", wrong))
+    assert run["state"] == "failed"
+    assert not any(t == "create_order" for t, _ in f.hsp.calls)

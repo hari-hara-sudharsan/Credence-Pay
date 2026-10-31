@@ -50,6 +50,9 @@ class SandboxRail:
         return {t: {"name": t, "schema": {}, "description": "Credence sandbox rail"} for t in TOOLS}
 
     async def call(self, tool: str, args: dict) -> dict:
+        # Payment and receiving agents hold separate rail instances; disk is the shared truth.
+        if self.path.exists():
+            self.orders = json.loads(self.path.read_text())
         args = {k.split("|")[0]: v for k, v in args.items()}
         return getattr(self, f"_{tool}")(args)
 
