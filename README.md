@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/logo-card.png" alt="Credence logo" width="240">
+<img src="docs/assets/logo-card.png" alt="Credence logo" width="280">
 
 <br><br>
 
