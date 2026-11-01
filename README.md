@@ -338,8 +338,8 @@ const score = await registry.trustScore(agent);                  // 300 to 900
 Requirements: Node.js 20+, Python 3.12, a funded testnet wallet, and, for the HSP rail, **IP allowlisting from HSP Operations** for the machine that runs the agent service (HSP Agentic Payment guide, step 1).
 
 ```powershell
-git clone https://github.com/hari-hara-sudharsan/Cre.git
-cd Cre
+git clone https://github.com/hari-hara-sudharsan/Credence-Pay.git
+cd Credence-Pay
 npm install
 copy .env.example agent\.env        # fill in agent keys and contract addresses
 powershell -ExecutionPolicy Bypass -File scripts\dev.ps1

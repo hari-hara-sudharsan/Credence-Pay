@@ -62,4 +62,4 @@ Solidity and Hardhat 3 · HSP Agentic Payment (MCP) · A2A 0.3 · AP2 mandates �
 
 ERC-20 made assets programmable. ERC-721 made ownership programmable. Credence makes **trust** programmable. When agents transact at machine speed, every sale on HashKey Chain should begin with one question: *what does Credence say about this agent?*
 
-**GitHub:** https://github.com/hari-hara-sudharsan/Cre
+**GitHub:** https://github.com/hari-hara-sudharsan/Credence-Pay
