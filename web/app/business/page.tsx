@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Coins, Landmark, Rocket, ShieldCheck, Store, Users } from "lucide-react";
 import { Kpi, SectionHead } from "@/components/ui";
-import { TERMS_COLOR, TERMS_LABEL, api, pct, usd, type Business } from "@/lib/api";
+import { TERMS_COLOR, TERMS_HEX, TERMS_LABEL, api, pct, usd, type Business } from "@/lib/api";
 
 const PRODUCT_LABEL: Record<string, string> = {
   risk_report: "Risk reports",
@@ -32,7 +32,7 @@ function Slider({ label, value, set, min, max, step, fmt }: { label: string; val
         <span className="text-dim">{label}</span>
         <span className="font-mono">{fmt(value)}</span>
       </div>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => set(Number(e.target.value))} className="mt-2 w-full accent-[#3ee6b0]" />
+      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => set(Number(e.target.value))} className="range mt-3" style={{ "--pct": `${((value - min) / (max - min)) * 100}%` } as React.CSSProperties} />
     </label>
   );
 }
@@ -84,7 +84,7 @@ export default function BusinessPage() {
       {/* live KPIs */}
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label="Merchant revenue settled" value={b ? usd(b.merchant_revenue_usd) : "—"} hint={b ? `${b.chain.total_settled} on-chain settlements` : undefined} />
-        <Kpi label="Credence fees accrued" value={b ? usd(b.credence_fees_usd, 3) : "—"} hint={b ? `${b.chain.fee_bps / 100}% on deferred volume, on-chain` : undefined} accent="#3ee6b0" />
+        <Kpi label="Credence fees accrued" value={b ? usd(b.credence_fees_usd, 3) : "—"} hint={b ? `${b.chain.fee_bps / 100}% on deferred volume, on-chain` : undefined} accent="#f2cd85" />
         <Kpi label="Volume on trusted terms" value={b ? pct(b.deferred_share) : "—"} hint="Net + Credit share of settled volume" />
         <Kpi label="Defaulted volume" value={b ? usd(b.chain.total_defaulted) : "—"} hint={b ? `${pct(b.default_rate)} of deferred exposure` : undefined} accent={b && b.chain.total_defaulted > 0 ? "#ff6b81" : undefined} />
       </div>
@@ -103,9 +103,9 @@ export default function BusinessPage() {
               <ResponsiveContainer>
                 <PieChart>
                   <Pie data={termData} dataKey="value" innerRadius={58} outerRadius={88} paddingAngle={3} stroke="none">
-                    {termData.map((d) => <Cell key={d.key} fill={TERMS_COLOR[d.key]} />)}
+                    {termData.map((d) => <Cell key={d.key} fill={TERMS_HEX[d.key]} />)}
                   </Pie>
-                  <Tooltip formatter={(v) => usd(Number(v))} contentStyle={{ background: "#0f1528", border: "1px solid rgb(122 142 196 / 0.3)", borderRadius: 12 }} />
+                  <Tooltip formatter={(v) => usd(Number(v))} contentStyle={{ background: "var(--color-panel-solid)", border: "1px solid var(--color-line-strong)", color: "var(--color-ink)", borderRadius: 12 }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -125,14 +125,14 @@ export default function BusinessPage() {
           <div className="mt-4 h-52">
             <ResponsiveContainer>
               <BarChart data={productData} margin={{ left: -10 }}>
-                <XAxis dataKey="name" tick={{ fill: "#9aa6c4", fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#64708f", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
-                <Tooltip cursor={{ fill: "rgb(255 255 255 / 0.04)" }} formatter={(v) => usd(Number(v))} contentStyle={{ background: "#0f1528", border: "1px solid rgb(122 142 196 / 0.3)", borderRadius: 12 }} />
+                <XAxis dataKey="name" tick={{ fill: "#a4a9c4", fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "#6c7291", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
+                <Tooltip cursor={{ fill: "rgb(255 255 255 / 0.04)" }} formatter={(v) => usd(Number(v))} contentStyle={{ background: "var(--color-panel-solid)", border: "1px solid var(--color-line-strong)", color: "var(--color-ink)", borderRadius: 12 }} />
                 <Bar dataKey="value" radius={[8, 8, 0, 0]} fill="url(#barGrad)" />
                 <defs>
                   <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0" stopColor="#3ee6b0" />
-                    <stop offset="1" stopColor="#22c3e6" stopOpacity="0.4" />
+                    <stop offset="0" stopColor="#8b9dff" />
+                    <stop offset="1" stopColor="#5ee7ff" stopOpacity="0.35" />
                   </linearGradient>
                 </defs>
               </BarChart>

@@ -70,9 +70,9 @@ export function Stepper({ run, busy }: { run: Run | null; busy: boolean }) {
             <div className="flex flex-col items-center gap-1.5">
               <span
                 className={`grid size-9 place-items-center rounded-full transition-all duration-500 ${
-                  bad ? "bg-bad text-white"
-                  : done ? "bg-good text-black"
-                  : current ? "bg-accent text-white shadow-[0_0_0_6px_rgb(41_151_255/0.18)]"
+                  bad ? "bg-bad text-[#fff]"
+                  : done ? "bg-good text-[#05060b]"
+                  : current ? "bg-accent text-[#fff] shadow-[0_0_0_6px_rgb(41_151_255/0.18)]"
                   : "bg-white/[0.07] text-faint"
                 }`}
               >
@@ -115,7 +115,7 @@ export function ConfirmFlow({ pre, onDone }: { pre: Preflight; onDone: (confirme
           return (
             <li key={it.key} className={`rounded-2xl border p-4 transition-all duration-300 ${current ? "border-accent bg-accent/[0.06]" : done ? "border-line bg-white/[0.03]" : "border-line opacity-40"}`}>
               <div className="flex items-start gap-3">
-                <span className={`mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-[11px] font-semibold ${done ? "bg-good text-black" : current ? "bg-accent text-white" : "bg-white/10 text-dim"}`}>
+                <span className={`mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-[11px] font-semibold ${done ? "bg-good text-[#05060b]" : current ? "bg-accent text-white" : "bg-white/10 text-dim"}`}>
                   {done ? <Check className="size-3.5" strokeWidth={3} /> : i + 1}
                 </span>
                 <div className="min-w-0 flex-1">

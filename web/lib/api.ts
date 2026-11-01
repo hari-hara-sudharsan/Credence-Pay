@@ -139,7 +139,13 @@ export const api = {
 export const usd = (n: number | string | undefined, digits = 2) =>
   `$${Number(n ?? 0).toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
 export const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
-export const TERMS_COLOR: Record<string, string> = { PREPAY: "#ff9f0a", NET: "#64d2ff", CREDIT: "#30d158" };
+// Tier colours follow the theme (globals.css sets --tier-* for dark and light).
+export const TERMS_COLOR: Record<string, string> = { PREPAY: "var(--tier-prepay)", NET: "var(--tier-net)", CREDIT: "var(--tier-credit)" };
+// Fixed hex values for places that cannot read CSS variables (chart fills).
+export const TERMS_HEX: Record<string, string> = { PREPAY: "#ffb65c", NET: "#5ee7ff", CREDIT: "#f2cd85" };
+/** A colour at a given opacity; `a` is a two-digit hex alpha ("14" ≈ 8%). Works for hex and var() colours. */
+export const tint = (c: string, a: string) =>
+  c.startsWith("#") ? `${c}${a}` : `color-mix(in srgb, ${c} ${((parseInt(a, 16) / 255) * 100).toFixed(1)}%, transparent)`;
 export const TERMS_LABEL: Record<string, string> = { PREPAY: "Prepay", NET: "Net 7", CREDIT: "Credit tab" };
 
 export const short = (v?: string | null, n = 6) => (v ? `${v.slice(0, n)}…${v.slice(-4)}` : "—");

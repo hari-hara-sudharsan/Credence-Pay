@@ -1,4 +1,4 @@
-import { TERMS_COLOR, usd, type Trust } from "@/lib/api";
+import { TERMS_COLOR, usd, type Trust, tint } from "@/lib/api";
 
 const LADDER = [
   { terms: "PREPAY", label: "Prepay", hint: "Pays before delivery", from: 300 },
@@ -16,11 +16,11 @@ export function TrustGauge({ score, previous }: { score: number; previous?: numb
       <svg viewBox="0 0 160 92" className="w-full" role="img" aria-label={`Trust score ${score}`}>
         <defs>
           <linearGradient id="gauge" x1="0" x2="1">
-            <stop offset="0" stopColor={color} stopOpacity="0.35" />
-            <stop offset="1" stopColor={color} />
+            <stop offset="0" style={{ stopColor: color }} stopOpacity="0.35" />
+            <stop offset="1" style={{ stopColor: color }} />
           </linearGradient>
         </defs>
-        <path d="M10 84 A70 70 0 0 1 150 84" fill="none" stroke="rgb(255 255 255 / 0.06)" strokeWidth="11" strokeLinecap="round" />
+        <path d="M10 84 A70 70 0 0 1 150 84" fill="none" style={{ stroke: "var(--ring-track-soft)" }} strokeWidth="11" strokeLinecap="round" />
         <path
           d="M10 84 A70 70 0 0 1 150 84"
           fill="none"
@@ -28,7 +28,7 @@ export function TrustGauge({ score, previous }: { score: number; previous?: numb
           strokeWidth="11"
           strokeLinecap="round"
           strokeDasharray={`${c * pct} ${c}`}
-          style={{ transition: "stroke-dasharray 1s cubic-bezier(.2,.8,.2,1)", filter: `drop-shadow(0 0 8px ${color}88)` }}
+          style={{ transition: "stroke-dasharray 1s cubic-bezier(.2,.8,.2,1)", filter: `drop-shadow(0 0 8px ${tint(color, "88")})` }}
         />
       </svg>
       <div className="absolute inset-x-0 bottom-0 text-center">
@@ -69,9 +69,9 @@ export default function TrustPanel({ trust, previous }: { trust: Trust | null; p
               <li
                 key={s.terms}
                 className="flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm transition"
-                style={active ? { borderColor: `${c}80`, background: `${c}12` } : { borderColor: "var(--color-line)" }}
+                style={active ? { borderColor: `${tint(c, "80")}`, background: `${tint(c, "12")}` } : { borderColor: "var(--color-line)" }}
               >
-                <span className="size-2 rounded-full" style={{ background: active ? c : "rgb(255 255 255 / 0.15)" }} />
+                <span className="size-2 rounded-full" style={{ background: active ? c : "var(--dot-off)" }} />
                 <div className="min-w-0">
                   <div className={active ? "font-medium" : "text-dim"}>{s.label}</div>
                   {active && <div className="text-[11px] text-dim">{s.hint}</div>}
