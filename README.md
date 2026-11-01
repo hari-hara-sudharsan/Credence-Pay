@@ -51,12 +51,12 @@ Four payment agents have real on-chain payment histories, built through the same
 
 | Payment agent | Trust | Terms | On-chain history |
 |---|---|---|---|
-| Atlas Lending Agent | **729** | Credit tab | 15 settlements, all on time |
-| Orbit Trading Agent | **576** | Net 7 | 5 settlements |
-| Nova Research Agent | **530** | Prepay | 2 settlements |
+| Atlas Lending Agent | **760** | Credit tab | 17 settlements, all on time |
+| Orbit Trading Agent | **591** | Net 7 | 6 settlements, all on time |
+| Nova Research Agent | **561** | Net 7 | 4 settlements; crossed from Prepay to Net 7 on Nov 1 |
 | Rogue Arbitrage Bot | **441** | Prepay | 6 settlements, then **defaulted** on a $6 tab |
 
-The registry holds **28 settlements, $84.50 of merchant volume, $0.65 of Credence fees accrued on-chain, and $6 defaulted.** The Business page reads these numbers live from the contracts.
+The registry holds **33 settlements, $97.00 of merchant volume, $0.765 of Credence fees accrued on-chain, and $6 defaulted** (as of Nov 1). The Business page reads these numbers live from the contracts.
 
 ### Two payment rails, one agent flow
 
@@ -91,11 +91,11 @@ The console's **A2A wire** tab shows every JSON-RPC message of a run, with full 
 
 | Run | Step | Transaction |
 |---|---|---|
-| Nova, PREPAY, trust 530 → 545 | Payment settled (EIP-3009) | [`0x49b8d1…f421`](https://testnet-explorer.hsk.xyz/tx/0x49b8d1e672deef960caf101bcb616edab7fd61b46106d5874d8174753a3bf421) |
-| | Verified by the receiving agent and anchored | [`0x094c42…cd4d`](https://testnet-explorer.hsk.xyz/tx/0x094c42780a03b2ca18cef113b22e171aa61156c442c840e6c9c4cbc6da59cd4d) |
-| Atlas, CREDIT, trust 729 → 745 | Tab opened, goods delivered before payment | [`0xf5ec24…7443`](https://testnet-explorer.hsk.xyz/tx/0xf5ec24c0687c4279283c13747cedfaa9bb1af64f010410ed09a599eac7637443) |
-| | Payment settled (EIP-3009) | [`0x2312eb…a273`](https://testnet-explorer.hsk.xyz/tx/0x2312ebf186079d7834040dd0c4949f7bf9a821a356e7d784bf41cfcb791ea273) |
-| | Verified, anchored, tab closed on time | [`0x31c0c9…8d7c`](https://testnet-explorer.hsk.xyz/tx/0x31c0c9eb8ef172f3956386fe0682b1b832082a62099aa63de18d49bf9a658d7c) |
+| Nova, PREPAY, trust 530 → 545 | Payment settled (EIP-3009) | [`0x49b8d1…f421`](https://testnet-explorer.hskchain.net/tx/0x49b8d1e672deef960caf101bcb616edab7fd61b46106d5874d8174753a3bf421) |
+| | Verified by the receiving agent and anchored | [`0x094c42…cd4d`](https://testnet-explorer.hskchain.net/tx/0x094c42780a03b2ca18cef113b22e171aa61156c442c840e6c9c4cbc6da59cd4d) |
+| Atlas, CREDIT, trust 729 → 745 | Tab opened, goods delivered before payment | [`0xf5ec24…7443`](https://testnet-explorer.hskchain.net/tx/0xf5ec24c0687c4279283c13747cedfaa9bb1af64f010410ed09a599eac7637443) |
+| | Payment settled (EIP-3009) | [`0x2312eb…a273`](https://testnet-explorer.hskchain.net/tx/0x2312ebf186079d7834040dd0c4949f7bf9a821a356e7d784bf41cfcb791ea273) |
+| | Verified, anchored, tab closed on time | [`0x31c0c9…8d7c`](https://testnet-explorer.hskchain.net/tx/0x31c0c9eb8ef172f3956386fe0682b1b832082a62099aa63de18d49bf9a658d7c) |
 
 ---
 
@@ -212,25 +212,25 @@ Deployed and wired together with [`ignition/modules/Credence.ts`](ignition/modul
 
 | Contract | Address | |
 |---|---|---|
-| `A2ASettlementRegistry` | [`0x0da11d916c5730E19a48bEc142387bEFDb59A819`](https://testnet-explorer.hsk.xyz/address/0x0da11d916c5730E19a48bEc142387bEFDb59A819) | hackathon |
-| `AgentSpendingPolicy` | [`0x7a9559Db3c9846825102c3513AbA2973A1A47BCA`](https://testnet-explorer.hsk.xyz/address/0x7a9559Db3c9846825102c3513AbA2973A1A47BCA) | hackathon |
-| `CredenceTestUSD` (cUSD) | [`0x26985124407Bf5d3B3E0e1EAc8d904221f4b9bc5`](https://testnet-explorer.hsk.xyz/address/0x26985124407Bf5d3B3E0e1EAc8d904221f4b9bc5) | hackathon |
-| `ReputationRegistry` | [`0x946E4397B93a147D68e7ADBa22C5A0EA718b00DC`](https://testnet-explorer.hsk.xyz/address/0x946E4397B93a147D68e7ADBa22C5A0EA718b00DC) | core, fed by A2A settlements |
-| `CreditPassportV2` | [`0x23CB5b72399c552A5117E9762C754c429Eb5Dd3F`](https://testnet-explorer.hsk.xyz/address/0x23CB5b72399c552A5117E9762C754c429Eb5Dd3F) | core |
-| `SettlementManager` | [`0x578dF3A9ee35d8ade83BA742E1821c67cc7338C5`](https://testnet-explorer.hsk.xyz/address/0x578dF3A9ee35d8ade83BA742E1821c67cc7338C5) | core |
-| `LendingPool` | [`0xc3D08c5D8fc127f4232f112a37399E1f2547ff39`](https://testnet-explorer.hsk.xyz/address/0xc3D08c5D8fc127f4232f112a37399E1f2547ff39) | core |
-| `LoanManager` | [`0xDC8FBDA1e52c7677dc05b062A30BBaC802Ac57d3`](https://testnet-explorer.hsk.xyz/address/0xDC8FBDA1e52c7677dc05b062A30BBaC802Ac57d3) | core |
+| `A2ASettlementRegistry` | [`0x0da11d916c5730E19a48bEc142387bEFDb59A819`](https://testnet-explorer.hskchain.net/address/0x0da11d916c5730E19a48bEc142387bEFDb59A819) | hackathon |
+| `AgentSpendingPolicy` | [`0x7a9559Db3c9846825102c3513AbA2973A1A47BCA`](https://testnet-explorer.hskchain.net/address/0x7a9559Db3c9846825102c3513AbA2973A1A47BCA) | hackathon |
+| `CredenceTestUSD` (cUSD) | [`0x26985124407Bf5d3B3E0e1EAc8d904221f4b9bc5`](https://testnet-explorer.hskchain.net/address/0x26985124407Bf5d3B3E0e1EAc8d904221f4b9bc5) | hackathon |
+| `ReputationRegistry` | [`0x946E4397B93a147D68e7ADBa22C5A0EA718b00DC`](https://testnet-explorer.hskchain.net/address/0x946E4397B93a147D68e7ADBa22C5A0EA718b00DC) | core, fed by A2A settlements |
+| `CreditPassportV2` | [`0x23CB5b72399c552A5117E9762C754c429Eb5Dd3F`](https://testnet-explorer.hskchain.net/address/0x23CB5b72399c552A5117E9762C754c429Eb5Dd3F) | core |
+| `SettlementManager` | [`0x578dF3A9ee35d8ade83BA742E1821c67cc7338C5`](https://testnet-explorer.hskchain.net/address/0x578dF3A9ee35d8ade83BA742E1821c67cc7338C5) | core |
+| `LendingPool` | [`0xc3D08c5D8fc127f4232f112a37399E1f2547ff39`](https://testnet-explorer.hskchain.net/address/0xc3D08c5D8fc127f4232f112a37399E1f2547ff39) | core |
+| `LoanManager` | [`0xDC8FBDA1e52c7677dc05b062A30BBaC802Ac57d3`](https://testnet-explorer.hskchain.net/address/0xDC8FBDA1e52c7677dc05b062A30BBaC802Ac57d3) | core |
 
 Example transactions from a live credit-terms purchase by Atlas:
 
 | Step | Transaction |
 |---|---|
-| Credit tab opened, goods delivered first | [`0xab7b2b…dab0`](https://testnet-explorer.hsk.xyz/tx/0xab7b2b003a69b130aab360afe59693570c5b2c37a66259abe2d844f6a448dab0) |
-| Payment settled (EIP-3009) | [`0xeb8256…6289`](https://testnet-explorer.hsk.xyz/tx/0xeb82562b6e9019432110dc2b222337795703dde66255bea15c97adc8af8e6289) |
-| Settlement anchored, trust 714 → 729 | [`0x22c7ff…b3ef`](https://testnet-explorer.hsk.xyz/tx/0x22c7ff0dbd95090b23dbe2f867bed6d11421b4ea271f879f40bc3c8b0133b3ef) |
-| Rogue's overdue tab marked defaulted | [`0xa94e50…fdf2`](https://testnet-explorer.hsk.xyz/tx/0xa94e502fb1ec89d9add7029798edf91e5f68d15460f83ffca626114dd903fdf2) |
+| Credit tab opened, goods delivered first | [`0xab7b2b…dab0`](https://testnet-explorer.hskchain.net/tx/0xab7b2b003a69b130aab360afe59693570c5b2c37a66259abe2d844f6a448dab0) |
+| Payment settled (EIP-3009) | [`0xeb8256…6289`](https://testnet-explorer.hskchain.net/tx/0xeb82562b6e9019432110dc2b222337795703dde66255bea15c97adc8af8e6289) |
+| Settlement anchored, trust 714 → 729 | [`0x22c7ff…b3ef`](https://testnet-explorer.hskchain.net/tx/0x22c7ff0dbd95090b23dbe2f867bed6d11421b4ea271f879f40bc3c8b0133b3ef) |
+| Rogue's overdue tab marked defaulted | [`0xa94e50…fdf2`](https://testnet-explorer.hskchain.net/tx/0xa94e502fb1ec89d9add7029798edf91e5f68d15460f83ffca626114dd903fdf2) |
 
-### HSK Chain Mainnet (177): deployment kit ready, waiting on gas
+### HSK Chain Mainnet (177): A2A layer live
 
 [`ignition/modules/CredenceMainnet.ts`](ignition/modules/CredenceMainnet.ts) deploys only the hackathon layer (`AgentSpendingPolicy`, `A2ASettlementRegistry`). It wires the registry into the **ReputationRegistry already live on mainnet** and grants `SETTLER_ROLE` to the receiving agent. The test dollar is not deployed; on mainnet the HSP rail settles real USDC (`0x054ed4…8D0a`, EIP-3009).
 
@@ -241,7 +241,12 @@ npx hardhat ignition deploy ignition/modules/CredenceMainnet.ts --network hashke
   --parameters '{"CredenceMainnet":{"merchantAgent":"0x6CE2E6D1e14E1a111Ba1D106e784b325E2820eb5"}}'
 ```
 
-Preflight status, Oct 31: every check passes except gas. The mainnet base fee is 500 gwei, so the deployment needs about 1.5 HSK, and the deployer needs about 3 HSK on hand because transactions are admitted at the 1000 gwei max fee.
+Deployed Nov 1 2026 with the command above. Records live in [`ignition/deployments/credence-mainnet`](ignition/deployments/credence-mainnet). Wiring verified on-chain: the registry holds `METER_ROLE` on the policy and `ORACLE_ROLE` on the ReputationRegistry, `reputation()` points at `0x110e…41Ab`, the receiving agent holds `SETTLER_ROLE`, and `feeBps` is 150. The receiving agent was given 0.3 HSK for anchoring gas with [`scripts/fund-merchant-mainnet.ts`](scripts/fund-merchant-mainnet.ts) ([`0x018554…9d16`](https://hsk.blockscout.com/tx/0x018554a4c1856c933e565c70ee177a5f7337060cc341ac4c03a68632b68f9d16)).
+
+| Contract | HSK Chain Mainnet (177) |
+|---|---|
+| `A2ASettlementRegistry` | [`0xFA2CE501f004F53341665911A4E57FbAFA263966`](https://hsk.blockscout.com/address/0xFA2CE501f004F53341665911A4E57FbAFA263966) |
+| `AgentSpendingPolicy` | [`0xD10e77AF03cfA0a4241DdD298a9A4d4734Cb573b`](https://hsk.blockscout.com/address/0xD10e77AF03cfA0a4241DdD298a9A4d4734Cb573b) |
 
 ### Earlier Credence prototype (already on HSK mainnet)
 
@@ -249,11 +254,11 @@ The core contracts were first deployed to mainnet before the hackathon. They are
 
 | Contract | HSK Chain Mainnet (177) |
 |---|---|
-| `CreditPassportV2` | [`0xbD3ff87D460def7cBB00b091cF994AC4B9c61E14`](https://hashkey.blockscout.com/address/0xbD3ff87D460def7cBB00b091cF994AC4B9c61E14) |
-| `ReputationRegistry` | [`0x110e9fB1ABEc92521E4511d5f45B4917B4c941Ab`](https://hashkey.blockscout.com/address/0x110e9fB1ABEc92521E4511d5f45B4917B4c941Ab) |
-| `LoanManager` | [`0x2988f0bE02e1a679430aEb4A6B9B10429F1e8e80`](https://hashkey.blockscout.com/address/0x2988f0bE02e1a679430aEb4A6B9B10429F1e8e80) |
-| `LendingPool` | [`0x928BA9D30669c41695422a68a1C307a6529F0050`](https://hashkey.blockscout.com/address/0x928BA9D30669c41695422a68a1C307a6529F0050) |
-| `SettlementManager` | [`0x4f3eEE789936a0eca627484bf680464f2F37b9FB`](https://hashkey.blockscout.com/address/0x4f3eEE789936a0eca627484bf680464f2F37b9FB) |
+| `CreditPassportV2` | [`0xbD3ff87D460def7cBB00b091cF994AC4B9c61E14`](https://hsk.blockscout.com/address/0xbD3ff87D460def7cBB00b091cF994AC4B9c61E14) |
+| `ReputationRegistry` | [`0x110e9fB1ABEc92521E4511d5f45B4917B4c941Ab`](https://hsk.blockscout.com/address/0x110e9fB1ABEc92521E4511d5f45B4917B4c941Ab) |
+| `LoanManager` | [`0x2988f0bE02e1a679430aEb4A6B9B10429F1e8e80`](https://hsk.blockscout.com/address/0x2988f0bE02e1a679430aEb4A6B9B10429F1e8e80) |
+| `LendingPool` | [`0x928BA9D30669c41695422a68a1C307a6529F0050`](https://hsk.blockscout.com/address/0x928BA9D30669c41695422a68a1C307a6529F0050) |
+| `SettlementManager` | [`0x4f3eEE789936a0eca627484bf680464f2F37b9FB`](https://hsk.blockscout.com/address/0x4f3eEE789936a0eca627484bf680464f2F37b9FB) |
 
 ---
 
@@ -288,9 +293,10 @@ copy .env.example agent\.env                  # then fill in agent keys and cont
 powershell -ExecutionPolicy Bypass -File scripts\dev.ps1
 ```
 
-`dev.ps1` creates the Python venv, installs dependencies, and opens two windows:
+`dev.ps1` creates the Python venv, installs dependencies, and opens three windows:
 
-- Agent API: http://localhost:8000/health
+- Credence Risk Agent (receiving agent, A2A server): http://localhost:8001/.well-known/agent-card.json
+- Agent API (payment agent, reaches 8001 only over A2A): http://localhost:8000/health
 - Agent Console: http://localhost:3000/console
 
 Or start each one manually:
@@ -340,7 +346,7 @@ cd agent; .\.venv\Scripts\python -m scripts.seed      # optional: build demo his
 
 ```powershell
 npx hardhat test solidity                     # 75 passing
-cd agent; .\.venv\Scripts\python -m pytest    # 13 passing
+cd agent; .\.venv\Scripts\python -m pytest    # 14 passing
 ```
 
 - **Solidity (75):** 28 new tests.
@@ -349,7 +355,7 @@ cd agent; .\.venv\Scripts\python -m pytest    # 13 passing
   - cUSD EIP-3009: relayed authorisation, replay, expiry, wrong signer, faucet cooldown.
 
   The other 47 are tests imported with the prototype contracts.
-- **Python (13):** the A2A layer (Agent Card advertises AP2 and skills, impersonation rejected before any HSP order, no anchoring on the payer's word, JSON-RPC errors for unknown methods), cart mandate shape, schema-driven argument fitting, chain-config token selection, and a **full A2A run against a fake HSP MCP server**. It asserts that nothing is signed before the first approval, nothing is submitted before the second, the signature recovers to the payer, settlement is anchored once, trust rises, and the spending policy blocks a payment before any signature.
+- **Python (14):** the A2A layer (Agent Card advertises AP2 and skills, impersonation rejected before any HSP order, no anchoring on the payer's word, JSON-RPC errors for unknown methods), cart mandate shape, schema-driven argument fitting, chain-config token selection, and a **full A2A run against a fake HSP MCP server**. It asserts that nothing is signed before the first approval, nothing is submitted before the second, the signature recovers to the payer, settlement is anchored once, trust rises, and the spending policy blocks a payment before any signature. It also checks that the two approvals cannot be given out of order.
 
 ---
 
@@ -372,7 +378,7 @@ We deliberately did not carry over the prototype's earlier "HSP" code, which was
 
 ## Roadmap
 
-- **Now:** first live HSP QA settlements, then mainnet deployment of the A2A contracts.
+- **Now:** first live HSP QA settlements, then the first mainnet settlement through the deployed A2A contracts.
 - **Next:**
   - Permit2 (USDT) payments.
   - Agent-signed reusable mandates for subscriptions and metered usage.

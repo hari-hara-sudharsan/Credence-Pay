@@ -1,5 +1,5 @@
 export const API = process.env.NEXT_PUBLIC_AGENT_API ?? "http://localhost:8000";
-export const EXPLORER = process.env.NEXT_PUBLIC_EXPLORER ?? "https://testnet-explorer.hsk.xyz";
+export const EXPLORER = process.env.NEXT_PUBLIC_EXPLORER ?? "https://testnet-explorer.hskchain.net";
 
 export type Step = {
   key: string;

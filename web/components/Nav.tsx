@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import ConnectWallet, { HSK_CHAINS } from "@/components/ConnectWallet";
 
 const LINKS = [
   { href: "/console", label: "Console" },
@@ -33,6 +34,7 @@ export default function Nav() {
   const path = usePathname();
   const [online, setOnline] = useState<boolean | null>(null);
   const [network, setNetwork] = useState("");
+  const [chainKey, setChainKey] = useState("hashkey-testnet");
 
   useEffect(() => {
     api
@@ -40,6 +42,7 @@ export default function Nav() {
       .then((h) => {
         setOnline(true);
         setNetwork(h.network === "hashkey-testnet" ? "HSK Testnet" : "HSK Mainnet");
+        if (h.network in HSK_CHAINS) setChainKey(h.network);
       })
       .catch(() => setOnline(false));
   }, []);
@@ -70,6 +73,7 @@ export default function Nav() {
           <span className={`size-1.5 rounded-full ${online === false ? "bg-bad" : online ? "bg-good" : "bg-faint"}`} />
           {online === false ? "Offline" : network || "Connecting"}
         </span>
+        <ConnectWallet chain={HSK_CHAINS[chainKey]} />
       </nav>
     </header>
   );

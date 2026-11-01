@@ -9,7 +9,7 @@ import TrustPanel from "@/components/console/TrustPanel";
 import WirePanel from "@/components/console/WirePanel";
 import StateBadge from "@/components/StateBadge";
 import { AgentAvatar, RailBadge, TermsBadge } from "@/components/ui";
-import { addrUrl, api, short, usd, type AgentCard, type HspStatus, type LeaderRow, type Run, type Trust } from "@/lib/api";
+import { API, addrUrl, api, short, usd, type AgentCard, type HspStatus, type LeaderRow, type Run, type Trust } from "@/lib/api";
 
 const BORROWERS = [
   { address: "0x2988f0bE02e1a679430aEb4A6B9B10429F1e8e80", label: "Borrower A" },
@@ -53,6 +53,7 @@ export default function ConsolePage() {
   const [custom, setCustom] = useState<string | null>(null); // set only when the user edits the instruction
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [offline, setOffline] = useState(false);
   const [pre, setPre] = useState<Preflight | null>(null);
   const [approvalOpen, setApprovalOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("timeline");
@@ -67,11 +68,30 @@ export default function ConsolePage() {
     api.runs().then(setRuns).catch(() => {});
   }, []);
 
+  // Load once the agent service answers; while it is down, show why and retry every 5 s.
   useEffect(() => {
-    api.agents().catch(() => setError("The agent service is not reachable. Start it with scripts\\dev.ps1."));
-    api.hspStatus().then(setHsp).catch(() => setHsp({ reachable: false }));
-    api.agentCard().then(setCard).catch(() => {});
-    refreshAgents();
+    let timer: ReturnType<typeof setTimeout>;
+    let cancelled = false;
+    const connect = () =>
+      api
+        .agents()
+        .then(() => {
+          if (cancelled) return;
+          setOffline(false);
+          api.hspStatus().then(setHsp).catch(() => setHsp({ reachable: false }));
+          api.agentCard().then(setCard).catch(() => {});
+          refreshAgents();
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setOffline(true);
+          timer = setTimeout(connect, 5_000);
+        });
+    connect();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [refreshAgents]);
 
   useEffect(() => {
@@ -161,6 +181,16 @@ export default function ConsolePage() {
         )}
       </header>
 
+      {offline && (
+        <div role="alert" className="mx-auto mt-8 max-w-2xl rounded-2xl border border-bad/30 bg-bad/10 px-4 py-3 text-sm text-bad">
+          <div className="font-medium">The agent service is not reachable at {API}.</div>
+          <p className="mt-1 text-bad/90">
+            Start it from the repository root with{" "}
+            <code className="rounded bg-black/30 px-1.5 py-0.5 font-mono text-xs">powershell -ExecutionPolicy Bypass -File scripts\dev.ps1</code>.
+            This page reconnects on its own once it is up.
+          </p>
+        </div>
+      )}
       {error && (
         <div role="alert" className="mx-auto mt-8 max-w-2xl rounded-2xl border border-bad/30 bg-bad/10 px-4 py-3 text-sm text-bad">{error}</div>
       )}

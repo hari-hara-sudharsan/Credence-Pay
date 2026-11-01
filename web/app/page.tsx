@@ -44,10 +44,32 @@ export default function Home() {
   const [agents, setAgents] = useState<LeaderRow[]>([]);
   const [proofs, setProofs] = useState<Proof[]>([]);
 
+  const [offline, setOffline] = useState(false);
+
+  // Load once the agent service answers; while it is down, say so and retry every 5 s.
   useEffect(() => {
-    api.business().then(setStats).catch(() => {});
-    api.leaderboard().then(setAgents).catch(() => {});
-    api.runs().then((runs) => setProofs(proofsFrom(runs))).catch(() => {});
+    let timer: ReturnType<typeof setTimeout>;
+    let cancelled = false;
+    const load = () =>
+      api
+        .leaderboard()
+        .then((rows) => {
+          if (cancelled) return;
+          setOffline(false);
+          setAgents(rows);
+          api.business().then(setStats).catch(() => {});
+          api.runs().then((runs) => setProofs(proofsFrom(runs))).catch(() => {});
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setOffline(true);
+          timer = setTimeout(load, 5_000);
+        });
+    load();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, []);
 
   return (
@@ -189,6 +211,13 @@ export default function Home() {
             </Link>
           }
         />
+        {offline && !agents.length && (
+          <p role="status" className="mt-8 rounded-2xl border border-bad/30 bg-bad/10 px-4 py-3 text-sm text-bad">
+            The agent service is not reachable, so these agents can&rsquo;t load. Start it with{" "}
+            <code className="rounded bg-black/30 px-1.5 py-0.5 font-mono text-xs">powershell -ExecutionPolicy Bypass -File scripts\dev.ps1</code>.
+            This section fills in on its own once it is up.
+          </p>
+        )}
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {(agents.length ? agents : Array.from<LeaderRow | undefined>({ length: 4 })).map((a, i) =>
             a ? (

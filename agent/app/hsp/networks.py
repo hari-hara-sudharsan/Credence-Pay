@@ -25,7 +25,7 @@ HASHKEY_MAINNET = Network(
     name="hashkey",
     chain_id=177,
     rpc="https://mainnet.hsk.xyz",
-    explorer="https://hashkey.blockscout.com",
+    explorer="https://hsk.blockscout.com",
     gateway="https://hsp.hashkey.com",
     tokens={
         "USDC": Token("USDC", "0x054ed45810DbBAb8B27668922D110669c9D88D0a", 6, "EIP-3009"),
@@ -37,7 +37,7 @@ HASHKEY_TESTNET = Network(
     name="hashkey-testnet",
     chain_id=133,
     rpc="https://testnet.hsk.xyz",
-    explorer="https://testnet-explorer.hsk.xyz",
+    explorer="https://testnet-explorer.hskchain.net",
     gateway="https://merchant-qa.hashkeymerchant.com",
     tokens={
         "USDC": Token("USDC", "0x8FE3cB719Ee4410E236Cd6b72ab1fCDC06eF53c6", 6, "EIP-3009"),

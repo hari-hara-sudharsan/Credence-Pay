@@ -3,7 +3,7 @@ import requests
 
 class BlockscoutClient:
 
-    BASE_URL = "https://hashkey.blockscout.com/api/v2"
+    BASE_URL = "https://hsk.blockscout.com/api/v2"
 
     def get_address(self, address: str):
         try:
