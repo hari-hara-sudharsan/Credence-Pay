@@ -1,5 +1,9 @@
 <div align="center">
 
+<img src="docs/assets/logo-card.png" alt="Credence logo" width="240">
+
+<br><br>
+
 <img src="docs/assets/banner.svg" alt="Credence: HSP lets agents pay each other. Credence decides on what terms." width="100%">
 
 <br>
