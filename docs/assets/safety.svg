@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="290" viewBox="0 0 1200 290" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b9dff" stop-opacity="0.16"/><stop offset="1" stop-color="#8b9dff" stop-opacity="0"/></linearGradient>
+    <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5ee7ff" stop-opacity="0.14"/><stop offset="1" stop-color="#5ee7ff" stop-opacity="0"/></linearGradient>
+    <linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2cd85" stop-opacity="0.16"/><stop offset="1" stop-color="#f2cd85" stop-opacity="0"/></linearGradient>
+  </defs>
+
+  <!-- AI -->
+  <g>
+    <rect x="0.5" y="0.5" width="371" height="289" rx="22" fill="#0b0e1a" stroke="#8b9dff" stroke-opacity="0.35"/>
+    <rect x="1" y="1" width="370" height="140" rx="22" fill="url(#g1)"/>
+    <g transform="translate(32,30)" fill="none" stroke="#8b9dff" stroke-width="2.2" stroke-linejoin="round">
+      <path d="M20 2 L24 16 L38 20 L24 24 L20 38 L16 24 L2 20 L16 16 Z"/>
+    </g>
+    <text x="32" y="104" font-size="12" font-weight="700" fill="#8b9dff" letter-spacing="2.5">AI AGENT</text>
+    <text x="32" y="134" font-size="26" font-weight="700" fill="#f3f5ff">Recommends</text>
+    <g font-size="15">
+      <text x="32" y="176" fill="#aab3d1">✓  Parses intent, picks a seller</text>
+      <text x="32" y="204" fill="#aab3d1">✓  Prepares the payment</text>
+      <text x="32" y="232" fill="#6f7899">✕  Cannot spend past its policy</text>
+      <text x="32" y="260" fill="#6f7899">✕  Cannot sign without approval</text>
+    </g>
+  </g>
+
+  <!-- Human -->
+  <g transform="translate(414,0)">
+    <rect x="0.5" y="0.5" width="371" height="289" rx="22" fill="#0b0e1a" stroke="#5ee7ff" stroke-opacity="0.35"/>
+    <rect x="1" y="1" width="370" height="140" rx="22" fill="url(#g2)"/>
+    <g transform="translate(32,30)" fill="none" stroke="#5ee7ff" stroke-width="2.2" stroke-linecap="round">
+      <circle cx="20" cy="12" r="8"/>
+      <path d="M4 38 C4 26 36 26 36 38"/>
+    </g>
+    <text x="32" y="104" font-size="12" font-weight="700" fill="#5ee7ff" letter-spacing="2.5">HUMAN OWNER</text>
+    <text x="32" y="134" font-size="26" font-weight="700" fill="#f3f5ff">Authorises</text>
+    <g font-size="15" fill="#aab3d1">
+      <text x="32" y="176">✓  Approves every signature</text>
+      <text x="32" y="204">✓  Approves every submission</text>
+      <text x="32" y="232">✓  Sets caps, merchants, expiry</text>
+      <text x="32" y="260">✓  Pauses the agent instantly</text>
+    </g>
+  </g>
+
+  <!-- Contracts -->
+  <g transform="translate(828,0)">
+    <rect x="0.5" y="0.5" width="371" height="289" rx="22" fill="#0b0e1a" stroke="#f2cd85" stroke-opacity="0.4"/>
+    <rect x="1" y="1" width="370" height="140" rx="22" fill="url(#g3)"/>
+    <g transform="translate(32,28)" fill="none" stroke="#f2cd85" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M20 2 L36 8 V20 C36 30 28 37 20 40 C12 37 4 30 4 20 V8 Z"/>
+      <path d="M13 21 L18 26 L28 15"/>
+    </g>
+    <text x="32" y="104" font-size="12" font-weight="700" fill="#f2cd85" letter-spacing="2.5">SMART CONTRACTS</text>
+    <text x="32" y="134" font-size="26" font-weight="700" fill="#f3f5ff">Enforce</text>
+    <g font-size="15" fill="#aab3d1">
+      <text x="32" y="176">✓  checkSpend() before any signature</text>
+      <text x="32" y="204">✓  Trust and terms computed on-chain</text>
+      <text x="32" y="232">✓  Every settlement anchored</text>
+      <text x="32" y="260">✓  Breaches recorded, never hidden</text>
+    </g>
+  </g>
+</svg>

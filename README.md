@@ -1,11 +1,10 @@
 <div align="center">
 
-# Credence
+<img src="docs/assets/banner.svg" alt="Credence: HSP lets agents pay each other. Credence decides on what terms." width="100%">
 
-### HSP lets agents pay each other. Credence decides on what terms.
+<br>
 
-**The trust layer for agent-to-agent payments on HashKey Chain.**
-Every HSP settlement becomes on-chain memory. Memory becomes a trust score. Trust becomes credit terms.
+Every HSP settlement becomes on-chain memory. Memory becomes a trust score. **Trust becomes credit terms.**
 
 [![HSK Mainnet](https://img.shields.io/badge/HSK_Mainnet-live-f2cd85?style=for-the-badge)](https://hsk.blockscout.com/address/0xFA2CE501f004F53341665911A4E57FbAFA263966)
 [![Track 2](https://img.shields.io/badge/Track_2-Agent_Payments_%26_A2A-8b9dff?style=for-the-badge)](#hsp-agentic-payment-guide-compliance)
@@ -16,11 +15,23 @@ Every HSP settlement becomes on-chain memory. Memory becomes a trust score. Trus
 
 HSK Chain Horizon Hackathon · Mumbai Edition 2026 · **Track 2: Agent Payments & A2A Settlement (HSP)**
 
-[The idea](#the-idea) · [Live proof](#live-proof) · [How it works](#how-a-purchase-works) · [Safety](#ai-recommends-humans-authorise-contracts-enforce) · [Contracts](#deployments) · [Business](#business-model) · [Run it](#run-it-locally)
+[Demo](#-demo) · [The idea](#the-idea) · [Live proof](#live-proof) · [How it works](#how-a-purchase-works) · [Safety](#ai-recommends-humans-authorise-contracts-enforce) · [Contracts](#deployments) · [Business](#business-model) · [Run it](#run-it-locally)
 
 </div>
 
 ---
+
+## ▶ Demo
+
+<a href="https://youtu.be/rczer5cuPpc"><img src="docs/assets/demo.svg" alt="Watch the Credence demo on YouTube" width="100%"></a>
+
+<div align="center">
+<a href="https://youtu.be/rczer5cuPpc"><img src="https://i.ytimg.com/vi/rczer5cuPpc/hqdefault.jpg" alt="Credence demo video thumbnail" width="560"></a>
+
+**[Watch on YouTube →](https://youtu.be/rczer5cuPpc)**
+</div>
+
+<img src="docs/assets/stats.svg" alt="33 settlements anchored on-chain · $97.00 agent-to-agent volume · $0.765 Credence fees accrued on-chain · 89 tests passing" width="100%">
 
 ## At a glance
 
@@ -48,16 +59,11 @@ People solved this centuries ago with credit history: a shop that knows you lets
 
 **Credence makes trust a shared, programmable primitive.** It does not ask *"how much collateral do you hold?"* It asks *"how reliably have you paid?"* The answer lives on-chain, so any agent, protocol or wallet can read it.
 
-```mermaid
-flowchart LR
-    A["HSP settlement<br/>payment-safe / finalized"] --> B["On-chain memory<br/>A2ASettlementRegistry"]
-    B --> C["Trust score<br/>300 to 900"]
-    C --> D["Terms<br/>Prepay · Net 7 · Credit"]
-    D --> E["Faster checkout<br/>more HSP volume"]
-    E --> A
-```
+<img src="docs/assets/cycle.svg" alt="HSP settlement → on-chain memory → trust score → credit terms → more HSP volume" width="100%">
 
 ### The trust ladder
+
+<img src="docs/assets/trust-ladder.svg" alt="Trust ladder from 300 to 900: Prepay below 560, Net 7 from 560, Credit tab from 700. Rogue 441, Nova 561, Orbit 591, Atlas 760." width="100%">
 
 `trustScore()` and `termsFor()` are view functions on the registry. No server and no model decides them.
 
@@ -68,12 +74,6 @@ score = 500
       − 40 × latePayments
       − 150 × defaults                        // clamped to [300, 900]
 ```
-
-| Trust score | Terms | What the receiving agent does |
-|---|---|---|
-| below 560, or any default | **Prepay** | Payment settles before goods are delivered |
-| 560 to 699 | **Net 7** | Goods first, payment due within 7 days, limit $25 |
-| 700 and above | **Credit tab** | Goods first, open tab of $25 + (score − 700), due within 30 days |
 
 One default sends an agent straight back to Prepay. Trust is earned slowly and lost quickly, as it should be.
 
@@ -179,11 +179,7 @@ The console's **A2A wire** tab shows every JSON-RPC message of a run, with full 
 
 An agent with a wallet is only safe if it cannot do more than its owner allowed. Credence separates intelligence from authority:
 
-| Layer | What it can do | What it cannot do |
-|---|---|---|
-| **AI agent** | Parse intent, pick a seller, prepare a payment | Spend beyond its on-chain policy, sign without approval, change its own limits |
-| **Human owner** | Approve each signature and each submission; set caps, merchants, expiry; pause instantly | Be bypassed: both approvals are separate states, in order |
-| **Smart contracts** | Enforce the spending policy, compute trust and terms, record every settlement | Hide a payment: a policy breach is still anchored and emits `PolicyViolation` |
+<img src="docs/assets/safety.svg" alt="AI agent recommends, human owner authorises, smart contracts enforce" width="100%">
 
 Three attacks a naive A2A payment flow is open to, and how Credence closes them:
 
@@ -222,25 +218,7 @@ No App Key, App Secret or merchant JWT is held by Credence. HSP manages those se
 
 ## Architecture
 
-```
-┌──────────────────────────── web/ (Next.js 16, React 19) ────────────────────────────┐
-│  Landing · Console · Agents · Business · Settlements · Developers · Trust passport  │
-└───────────────────────────────────────────┬─────────────────────────────────────────┘
-                                            │ REST
-┌──────────────────────── agent/ (FastAPI, Python 3.12) ───────────────────────────────┐
-│  Payment agent API :8000                    Credence Risk Agent :8001 (A2A server)   │
-│  BuyerAgent (Groq Llama 3.3 or rules)  ──A2A JSON-RPC + AP2──▶  MerchantAgent         │
-│  A2AFlow: two approval gates, persisted     trust-gated terms, live credit reports   │
-│  HSPAgenticPayment (MCP client)             TrustRegistry (web3 client)              │
-└──────────────┬───────────────────────────────────────────────┬───────────────────────┘
-               │ MCP (Streamable HTTP)                         │ JSON-RPC
-     ┌─────────▼───────────┐                       ┌───────────▼──────────────────┐
-     │ HSP Agentic Payment │──── USDC transfer ───▶│ HashKey Chain                │
-     │ MCP + Gateway       │                       │  A2ASettlementRegistry       │
-     └─────────────────────┘                       │  AgentSpendingPolicy         │
-                                                   │  ReputationRegistry (shared) │
-                                                   └──────────────────────────────┘
-```
+<img src="docs/assets/architecture.svg" alt="Architecture: web app, payment agent and Credence Risk Agent talking over A2A, HSP Agentic Payment MCP and Gateway, HashKey Chain contracts" width="100%">
 
 ### Contracts
 

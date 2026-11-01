@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="150" viewBox="0 0 1200 150" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="a1" x1="0" x2="1"><stop offset="0" stop-color="#8b9dff"/><stop offset="1" stop-color="#5ee7ff"/></linearGradient>
+    <linearGradient id="a2" x1="0" x2="1"><stop offset="0" stop-color="#5ee7ff"/><stop offset="1" stop-color="#34d399"/></linearGradient>
+    <linearGradient id="a3" x1="0" x2="1"><stop offset="0" stop-color="#f2cd85"/><stop offset="1" stop-color="#ffb65c"/></linearGradient>
+    <linearGradient id="a4" x1="0" x2="1"><stop offset="0" stop-color="#c08cff"/><stop offset="1" stop-color="#8b9dff"/></linearGradient>
+  </defs>
+  <g>
+    <rect x="0.5" y="0.5" width="281" height="149" rx="20" fill="#0b0e1a" stroke="#ffffff" stroke-opacity="0.09"/>
+    <rect x="28" y="0.5" width="80" height="3" rx="1.5" fill="url(#a1)"/>
+    <text x="28" y="78" font-size="50" font-weight="700" fill="#f3f5ff" letter-spacing="-1.5">33</text>
+    <text x="28" y="112" font-size="15" fill="#8a93b5">settlements anchored on-chain</text>
+  </g>
+  <g transform="translate(306,0)">
+    <rect x="0.5" y="0.5" width="281" height="149" rx="20" fill="#0b0e1a" stroke="#ffffff" stroke-opacity="0.09"/>
+    <rect x="28" y="0.5" width="80" height="3" rx="1.5" fill="url(#a2)"/>
+    <text x="28" y="78" font-size="50" font-weight="700" fill="#f3f5ff" letter-spacing="-1.5">$97.00</text>
+    <text x="28" y="112" font-size="15" fill="#8a93b5">agent-to-agent volume</text>
+  </g>
+  <g transform="translate(612,0)">
+    <rect x="0.5" y="0.5" width="281" height="149" rx="20" fill="#0b0e1a" stroke="#ffffff" stroke-opacity="0.09"/>
+    <rect x="28" y="0.5" width="80" height="3" rx="1.5" fill="url(#a3)"/>
+    <text x="28" y="78" font-size="50" font-weight="700" fill="#f3f5ff" letter-spacing="-1.5">$0.765</text>
+    <text x="28" y="112" font-size="15" fill="#8a93b5">Credence fees accrued on-chain</text>
+  </g>
+  <g transform="translate(918,0)">
+    <rect x="0.5" y="0.5" width="281" height="149" rx="20" fill="#0b0e1a" stroke="#ffffff" stroke-opacity="0.09"/>
+    <rect x="28" y="0.5" width="80" height="3" rx="1.5" fill="url(#a4)"/>
+    <text x="28" y="78" font-size="50" font-weight="700" fill="#f3f5ff" letter-spacing="-1.5">89</text>
+    <text x="28" y="112" font-size="15" fill="#8a93b5">tests passing, incl. fuzzing</text>
+  </g>
+</svg>

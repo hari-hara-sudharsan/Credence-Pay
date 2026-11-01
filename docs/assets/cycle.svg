@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="240" viewBox="0 0 1200 240" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#5ee7ff" fill-opacity="0.8"/>
+    </marker>
+  </defs>
+
+  <g font-size="13">
+    <g>
+      <rect x="30.5" y="20.5" width="240" height="112" rx="18" fill="#0b0e1a" stroke="#8b9dff" stroke-opacity="0.45"/>
+      <text x="52" y="52" font-size="12" font-weight="700" fill="#8b9dff" letter-spacing="2">01</text>
+      <text x="52" y="82" font-size="20" font-weight="700" fill="#f3f5ff">HSP settlement</text>
+      <text x="52" y="108" fill="#8a93b5">payment-safe / finalized</text>
+    </g>
+    <g transform="translate(300,0)">
+      <rect x="30.5" y="20.5" width="240" height="112" rx="18" fill="#0b0e1a" stroke="#5ee7ff" stroke-opacity="0.45"/>
+      <text x="52" y="52" font-size="12" font-weight="700" fill="#5ee7ff" letter-spacing="2">02</text>
+      <text x="52" y="82" font-size="20" font-weight="700" fill="#f3f5ff">On-chain memory</text>
+      <text x="52" y="108" fill="#8a93b5" font-family="Consolas, monospace">recordSettlement()</text>
+    </g>
+    <g transform="translate(600,0)">
+      <rect x="30.5" y="20.5" width="240" height="112" rx="18" fill="#0b0e1a" stroke="#c08cff" stroke-opacity="0.45"/>
+      <text x="52" y="52" font-size="12" font-weight="700" fill="#c08cff" letter-spacing="2">03</text>
+      <text x="52" y="82" font-size="20" font-weight="700" fill="#f3f5ff">Trust score</text>
+      <text x="52" y="108" fill="#8a93b5">300 to 900, computed on-chain</text>
+    </g>
+    <g transform="translate(900,0)">
+      <rect x="30.5" y="20.5" width="240" height="112" rx="18" fill="#0b0e1a" stroke="#f2cd85" stroke-opacity="0.55"/>
+      <text x="52" y="52" font-size="12" font-weight="700" fill="#f2cd85" letter-spacing="2">04</text>
+      <text x="52" y="82" font-size="20" font-weight="700" fill="#f3f5ff">Credit terms</text>
+      <text x="52" y="108" fill="#8a93b5">Prepay · Net 7 · Credit tab</text>
+    </g>
+  </g>
+
+  <g stroke="#5ee7ff" stroke-opacity="0.7" stroke-width="2" stroke-dasharray="4 5" marker-end="url(#ar)">
+    <line x1="276" y1="76" x2="324" y2="76"><animate attributeName="stroke-dashoffset" from="18" to="0" dur="1s" repeatCount="indefinite"/></line>
+    <line x1="576" y1="76" x2="624" y2="76"><animate attributeName="stroke-dashoffset" from="18" to="0" dur="1s" repeatCount="indefinite"/></line>
+    <line x1="876" y1="76" x2="924" y2="76"><animate attributeName="stroke-dashoffset" from="18" to="0" dur="1s" repeatCount="indefinite"/></line>
+  </g>
+
+  <path id="back" d="M1050 138 C1050 218 150 218 150 138" fill="none" stroke="#ffffff" stroke-opacity="0.16" stroke-width="2" stroke-dasharray="4 6" marker-end="url(#ar)"/>
+  <circle r="5" fill="#f2cd85">
+    <animateMotion dur="4s" repeatCount="indefinite"><mpath href="#back"/></animateMotion>
+  </circle>
+  <rect x="470" y="182" width="260" height="32" rx="16" fill="#05060b" stroke="#ffffff" stroke-opacity="0.12"/>
+  <text x="600" y="203" text-anchor="middle" font-size="14" font-weight="600" fill="#aab3d1">better terms → more HSP volume</text>
+</svg>

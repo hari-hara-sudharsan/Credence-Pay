@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="500" viewBox="0 0 1200 500" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#aab3d1"/>
+    </marker>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#ffffff" stroke-opacity="0.03"/>
+    </pattern>
+  </defs>
+  <rect x="0.5" y="0.5" width="1199" height="499" rx="24" fill="#05060b" stroke="#ffffff" stroke-opacity="0.09"/>
+  <rect x="1" y="1" width="1198" height="498" rx="24" fill="url(#grid)"/>
+
+  <!-- web -->
+  <rect x="40.5" y="30.5" width="1119" height="82" rx="16" fill="#0b0e1a" stroke="#c08cff" stroke-opacity="0.45"/>
+  <text x="64" y="62" font-size="12" font-weight="700" fill="#c08cff" letter-spacing="2">WEB APP · NEXT.JS 16</text>
+  <g font-size="13" fill="#cdd3ea">
+    <text x="64" y="92">Landing + trust simulator   ·   Console   ·   Agents   ·   Business   ·   Settlements   ·   Developers</text>
+  </g>
+
+  <!-- agents -->
+  <rect x="40.5" y="180.5" width="459" height="120" rx="16" fill="#0b0e1a" stroke="#8b9dff" stroke-opacity="0.5"/>
+  <text x="64" y="212" font-size="12" font-weight="700" fill="#8b9dff" letter-spacing="2">PAYMENT AGENT · :8000</text>
+  <text x="64" y="240" font-size="19" font-weight="700" fill="#f3f5ff">Lending Agent</text>
+  <text x="64" y="264" font-size="13" fill="#8a93b5">Intent (Llama 3.3 or rules) · two approval gates</text>
+  <text x="64" y="284" font-size="13" fill="#8a93b5">signs only the HSP-returned EIP-712</text>
+
+  <rect x="700.5" y="180.5" width="459" height="120" rx="16" fill="#0b0e1a" stroke="#5ee7ff" stroke-opacity="0.5"/>
+  <text x="724" y="212" font-size="12" font-weight="700" fill="#5ee7ff" letter-spacing="2">RECEIVING AGENT · A2A SERVER · :8001</text>
+  <text x="724" y="240" font-size="19" font-weight="700" fill="#f3f5ff">Credence Risk Agent</text>
+  <text x="724" y="264" font-size="13" fill="#8a93b5">Agent Card · trust-gated terms · verifies with HSP</text>
+  <text x="724" y="284" font-size="13" fill="#8a93b5">sells live wallet risk reports</text>
+
+  <!-- A2A link -->
+  <line x1="506" y1="240" x2="694" y2="240" stroke="#5ee7ff" stroke-opacity="0.6" stroke-width="2" stroke-dasharray="4 5" marker-start="url(#ar)" marker-end="url(#ar)"/>
+  <rect x="530" y="206" width="140" height="24" rx="12" fill="#05060b" stroke="#5ee7ff" stroke-opacity="0.4"/>
+  <text x="600" y="222" text-anchor="middle" font-size="12" font-weight="600" fill="#9cf1ff">A2A 0.3 · AP2</text>
+  <circle r="4" cy="240" fill="#5ee7ff">
+    <animate attributeName="cx" values="512;688" dur="1.6s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="4" cy="240" fill="#f2cd85">
+    <animate attributeName="cx" values="688;512" dur="1.6s" begin="0.8s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- bottom -->
+  <rect x="40.5" y="370.5" width="459" height="100" rx="16" fill="#0b0e1a" stroke="#ffffff" stroke-opacity="0.2"/>
+  <text x="64" y="402" font-size="12" font-weight="700" fill="#aab3d1" letter-spacing="2">HSP AGENTIC PAYMENT</text>
+  <text x="64" y="430" font-size="19" font-weight="700" fill="#f3f5ff">MCP server + Gateway</text>
+  <text x="64" y="452" font-size="13" fill="#8a93b5">8 tools · create_order → submit_payment → query</text>
+
+  <rect x="700.5" y="370.5" width="459" height="100" rx="16" fill="#0b0e1a" stroke="#f2cd85" stroke-opacity="0.5"/>
+  <text x="724" y="402" font-size="12" font-weight="700" fill="#f2cd85" letter-spacing="2">HASHKEY CHAIN</text>
+  <text x="724" y="430" font-size="19" font-weight="700" fill="#f3f5ff">A2ASettlementRegistry · AgentSpendingPolicy</text>
+  <text x="724" y="452" font-size="13" fill="#8a93b5">trustScore() · termsFor() · ReputationRegistry feed</text>
+
+  <!-- arrows -->
+  <g stroke="#aab3d1" stroke-opacity="0.5" stroke-width="1.6" fill="none" marker-end="url(#ar)">
+    <line x1="270" y1="114" x2="270" y2="176"/>
+    <line x1="270" y1="302" x2="270" y2="366"/>
+    <path d="M800 302 C800 340 520 330 470 366"/>
+    <line x1="930" y1="302" x2="930" y2="366"/>
+    <line x1="502" y1="420" x2="696" y2="420"/>
+  </g>
+  <g font-size="12" fill="#8a93b5">
+    <text x="282" y="150">REST</text>
+    <text x="282" y="340">MCP · Streamable HTTP</text>
+    <text x="942" y="340">recordSettlement · openTab</text>
+    <text x="599" y="442" text-anchor="middle">USDC · EIP-3009</text>
+    <text x="610" y="318" text-anchor="middle">create_order · query_payment</text>
+  </g>
+</svg>

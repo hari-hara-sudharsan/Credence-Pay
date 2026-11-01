@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" font-family="Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="logo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9aa8ff"/><stop offset="0.55" stop-color="#5ee7ff"/><stop offset="1" stop-color="#c08cff"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8b9dff"/><stop offset="0.6" stop-color="#5ee7ff"/><stop offset="1" stop-color="#f2cd85"/>
+    </linearGradient>
+    <linearGradient id="tag" x1="0" x2="1">
+      <stop offset="0" stop-color="#9aa8ff"/><stop offset="0.5" stop-color="#5ee7ff"/><stop offset="1" stop-color="#f2cd85"/>
+    </linearGradient>
+    <radialGradient id="b1"><stop offset="0" stop-color="#5b6cff" stop-opacity="0.55"/><stop offset="1" stop-color="#5b6cff" stop-opacity="0"/></radialGradient>
+    <radialGradient id="b2"><stop offset="0" stop-color="#22d3ee" stop-opacity="0.32"/><stop offset="1" stop-color="#22d3ee" stop-opacity="0"/></radialGradient>
+    <radialGradient id="b3"><stop offset="0" stop-color="#a855f7" stop-opacity="0.38"/><stop offset="1" stop-color="#a855f7" stop-opacity="0"/></radialGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#ffffff" stroke-opacity="0.035"/>
+    </pattern>
+    <clipPath id="card"><rect width="1200" height="420" rx="28"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#card)">
+    <rect width="1200" height="420" fill="#05060b"/>
+    <circle cx="1000" cy="60" r="300" fill="url(#b1)">
+      <animateTransform attributeName="transform" type="translate" values="0 0;-40 30;0 0" dur="14s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="160" cy="420" r="300" fill="url(#b2)">
+      <animateTransform attributeName="transform" type="translate" values="0 0;50 -20;0 0" dur="16s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="700" cy="440" r="240" fill="url(#b3)">
+      <animateTransform attributeName="transform" type="translate" values="0 0;-30 -30;0 0" dur="12s" repeatCount="indefinite"/>
+    </circle>
+    <rect width="1200" height="420" fill="url(#grid)"/>
+    <rect x="0.5" y="0.5" width="1199" height="419" rx="28" fill="none" stroke="#ffffff" stroke-opacity="0.08"/>
+  </g>
+
+  <!-- logo + wordmark -->
+  <g transform="translate(80,66) scale(2.6)">
+    <path d="M17.5 6.5a7.5 7.5 0 1 0 0 11" fill="none" stroke="url(#logo)" stroke-width="2.6" stroke-linecap="round"/>
+    <circle cx="18" cy="12" r="1.8" fill="#f2cd85"/>
+  </g>
+  <text x="150" y="112" font-size="38" font-weight="700" fill="#f3f5ff" letter-spacing="-0.5">Credence</text>
+
+  <text x="80" y="205" font-size="44" font-weight="700" fill="#f3f5ff" letter-spacing="-1">HSP lets agents pay each other.</text>
+  <text x="80" y="260" font-size="44" font-weight="700" fill="url(#tag)" letter-spacing="-1">Credence decides on what terms.</text>
+  <text x="80" y="302" font-size="19" fill="#8a93b5">The on-chain trust layer for agent-to-agent payments on HashKey Chain.</text>
+
+  <!-- chips -->
+  <g font-size="14" font-weight="600">
+    <rect x="80" y="336" width="186" height="34" rx="17" fill="#f2cd85" fill-opacity="0.12" stroke="#f2cd85" stroke-opacity="0.5"/>
+    <circle cx="100" cy="353" r="4.5" fill="#f2cd85"><animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/></circle>
+    <text x="113" y="358" fill="#f2cd85">Live on HSK Mainnet</text>
+    <rect x="278" y="336" width="88" height="34" rx="17" fill="#ffffff" fill-opacity="0.05" stroke="#ffffff" stroke-opacity="0.14"/>
+    <text x="296" y="358" fill="#cdd3ea">A2A 0.3</text>
+    <rect x="378" y="336" width="132" height="34" rx="17" fill="#ffffff" fill-opacity="0.05" stroke="#ffffff" stroke-opacity="0.14"/>
+    <text x="396" y="358" fill="#cdd3ea">AP2 mandates</text>
+    <rect x="522" y="336" width="178" height="34" rx="17" fill="#ffffff" fill-opacity="0.05" stroke="#ffffff" stroke-opacity="0.14"/>
+    <text x="540" y="358" fill="#cdd3ea">HSP Agentic Payment</text>
+  </g>
+
+  <!-- trust ring -->
+  <g transform="translate(985,170)">
+    <circle r="92" fill="#0b0e1a" fill-opacity="0.6"/>
+    <circle r="92" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="12"/>
+    <circle r="92" fill="none" stroke="url(#ring)" stroke-width="12" stroke-linecap="round" transform="rotate(-90)" stroke-dasharray="443 578">
+      <animate attributeName="stroke-dasharray" from="0 578" to="443 578" dur="2.2s" begin="0s" fill="freeze" calcMode="spline" keySplines="0.16 1 0.3 1" keyTimes="0;1"/>
+    </circle>
+    <text y="-26" text-anchor="middle" font-size="12" font-weight="600" fill="#8a93b5" letter-spacing="2">TRUST SCORE</text>
+    <text y="26" text-anchor="middle" font-size="58" font-weight="700" fill="#f3f5ff" letter-spacing="-2">760</text>
+    <text y="52" text-anchor="middle" font-size="13" fill="#8a93b5">Atlas Lending Agent</text>
+  </g>
+  <rect x="890" y="282" width="190" height="34" rx="17" fill="#f2cd85" fill-opacity="0.14" stroke="#f2cd85" stroke-opacity="0.55"/>
+  <text x="985" y="304" text-anchor="middle" font-size="14" font-weight="700" fill="#f2cd85" letter-spacing="1">CREDIT TAB · $85</text>
+
+  <!-- agent-to-agent wire -->
+  <g font-size="13" font-weight="600">
+    <rect x="800" y="344" width="122" height="30" rx="15" fill="#8b9dff" fill-opacity="0.12" stroke="#8b9dff" stroke-opacity="0.5"/>
+    <text x="861" y="364" text-anchor="middle" fill="#b9c3ff">Lending Agent</text>
+    <rect x="1048" y="344" width="112" height="30" rx="15" fill="#5ee7ff" fill-opacity="0.1" stroke="#5ee7ff" stroke-opacity="0.5"/>
+    <text x="1104" y="364" text-anchor="middle" fill="#9cf1ff">Risk Agent</text>
+  </g>
+  <line x1="926" y1="359" x2="1044" y2="359" stroke="#ffffff" stroke-opacity="0.18" stroke-dasharray="3 5"/>
+  <circle r="4" cy="359" fill="#5ee7ff">
+    <animate attributeName="cx" values="930;1040" dur="1.8s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.15;0.85;1" dur="1.8s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="4" cy="359" fill="#f2cd85">
+    <animate attributeName="cx" values="1040;930" dur="1.8s" begin="0.9s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.15;0.85;1" dur="1.8s" begin="0.9s" repeatCount="indefinite"/>
+  </circle>
+</svg>
