@@ -23,12 +23,12 @@ HSK Chain Horizon Hackathon · Mumbai Edition 2026 · **Track 2: Agent Payments 
 
 ## ▶ Demo
 
-<a href="https://youtu.be/rczer5cuPpc"><img src="docs/assets/demo.svg" alt="Watch the Credence demo on YouTube" width="100%"></a>
+<a href="https://youtu.be/zwnT2ucXELg"><img src="docs/assets/demo.svg" alt="Watch the Credence demo on YouTube" width="100%"></a>
 
 <div align="center">
-<a href="https://youtu.be/rczer5cuPpc"><img src="https://i.ytimg.com/vi/rczer5cuPpc/hqdefault.jpg" alt="Credence demo video thumbnail" width="560"></a>
+<a href="https://youtu.be/zwnT2ucXELg"><img src="https://i.ytimg.com/vi/zwnT2ucXELg/hqdefault.jpg" alt="Credence demo video thumbnail" width="560"></a>
 
-**[Watch on YouTube →](https://youtu.be/rczer5cuPpc)**
+**[Watch on YouTube →](https://youtu.be/zwnT2ucXELg)**
 
 **Try the frontend:** **[credence-pay-lyart.vercel.app](https://credence-pay-lyart.vercel.app)**. It is a read-only showcase that uses a snapshot of the live testnet agents; [run it locally](#run-it-locally) to make real payments.
 </div>

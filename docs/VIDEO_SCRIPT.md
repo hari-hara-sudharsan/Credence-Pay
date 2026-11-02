@@ -1,5 +1,7 @@
 # Credence demo video: script and app flow
 
+> **Published video:** [youtu.be/zwnT2ucXELg](https://youtu.be/zwnT2ucXELg) is the produced 2:50 motion-graphics cut, made from real screens of the app and the HashKey explorer. Its chapters are in [`HACKATHON.md`](HACKATHON.md#demo-video). The script below is for recording a screen-capture walkthrough of the live console.
+
 Target length: **about 3 minutes**. Format: screen recording with voice-over, 1920×1080.
 
 ## Before you record

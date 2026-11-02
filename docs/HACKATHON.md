@@ -109,6 +109,27 @@ When agents transact at machine speed, every sale on HashKey Chain should start 
 
 ---
 
-**Live demo:** https://credence-pay-lyart.vercel.app · **Demo video:** https://youtu.be/rczer5cuPpc · **GitHub:** https://github.com/hari-hara-sudharsan/Credence-Pay
+## Demo video
+
+**[Watch on YouTube: youtu.be/zwnT2ucXELg](https://youtu.be/zwnT2ucXELg)** (2:50)
+
+A motion-graphics walkthrough built from real screens of the live app and the HashKey explorer, with the real values from the first live HSP payment.
+
+| Time | Chapter |
+|---|---|
+| 0:00 | 2 a.m.: who pays first? |
+| 0:08 | HSP lets agents pay each other. Credence decides on what terms. |
+| 0:20 | Every agent is a stranger |
+| 0:32 | Settlement → memory → score → terms |
+| 0:50 | The trust ladder: Prepay, Net 7, Credit tab |
+| 1:06 | Same order, different terms: four real agents |
+| 1:26 | Real A2A: two agents, one protocol |
+| 1:38 | The first live HSP payment, step by step |
+| 2:06 | Proof on HashKey Chain |
+| 2:22 | AI recommends, humans authorise, contracts enforce |
+| 2:34 | Credence earns when trust earns |
+| 2:42 | Live on HSK Mainnet |
+
+**Live demo:** https://credence-pay-lyart.vercel.app · **Demo video:** https://youtu.be/zwnT2ucXELg · **GitHub:** https://github.com/hari-hara-sudharsan/Credence-Pay
 
 Built with Solidity and Hardhat 3 · HSP Agentic Payment (MCP) · A2A 0.3 · AP2 mandates · EIP-3009 · Python FastAPI · Next.js 16 and React 19
