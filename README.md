@@ -33,7 +33,7 @@ HSK Chain Horizon Hackathon · Mumbai Edition 2026 · **Track 2: Agent Payments 
 **Try the frontend:** **[credence-pay-lyart.vercel.app](https://credence-pay-lyart.vercel.app)**. It is a read-only showcase that uses a snapshot of the live testnet agents; [run it locally](#run-it-locally) to make real payments.
 </div>
 
-<img src="docs/assets/stats.svg" alt="33 settlements anchored on-chain · $97.00 agent-to-agent volume · $0.765 Credence fees accrued on-chain · 89 tests passing" width="100%">
+<img src="docs/assets/stats.svg" alt="35 settlements anchored on-chain · $102.00 agent-to-agent volume · $0.84 Credence fees accrued on-chain · 89 tests passing" width="100%">
 
 ## At a glance
 
@@ -42,7 +42,7 @@ HSK Chain Horizon Hackathon · Mumbai Edition 2026 · **Track 2: Agent Payments 
 | **What it is** | A trust and terms layer that sits on top of HSP. Before an agent sells to another agent, it asks Credence one question: *on what terms?* |
 | **What it answers** | `Prepay`, `Net 7`, or a `Credit tab` of $25 to $225, computed on-chain from the buyer's real HSP settlement history |
 | **Who stays in control** | The human owner. Agents spend only inside an on-chain policy, and every payment needs two explicit human approvals |
-| **What is live** | Two A2A contracts on **HSK Mainnet**, the full 8-contract stack on testnet, four payment agents with 33 real settlements, a standalone A2A receiving agent, and an HSP MCP integration verified against the live QA server |
+| **What is live** | Two A2A contracts on **HSK Mainnet**, the full 8-contract stack on testnet, four payment agents with 35 real settlements including a **live HSP payment**, a standalone A2A receiving agent, and an HSP MCP integration verified against the live QA server |
 
 ---
 
@@ -89,10 +89,23 @@ Four payment agents built real on-chain histories through the same agent flow. E
 |---|---|---|---|
 | 🟡 **Atlas** Lending Agent | **760** | Credit tab ($85) | 17 settlements, all on time |
 | 🔵 **Orbit** Trading Agent | **591** | Net 7 | 6 settlements, all on time |
-| 🔵 **Nova** Research Agent | **561** | Net 7 | 4 settlements; crossed from Prepay to Net 7 on Nov 1 |
+| 🔵 **Nova** Research Agent | **591** | Net 7 | 6 settlements; crossed from Prepay to Net 7 on Nov 1, then paid through **HSP** on Nov 2 |
 | 🟠 **Rogue** Arbitrage Bot | **441** | Prepay | 6 settlements, then **defaulted** on a $6 tab |
 
-**33 settlements · $97.00 merchant volume · $0.765 Credence fees accrued on-chain · $6 defaulted.** The Business page reads these numbers live from the contracts.
+**35 settlements · $102.00 merchant volume · $0.84 Credence fees accrued on-chain · $6 defaulted.**
+
+### First live HSP payment (Nov 2, HSK testnet)
+
+Nova bought a $2.50 wallet risk report from the Credence Risk Agent over A2A and paid through **HSP Agentic Payment** (QA MCP server and Gateway, team `Credence7`), with both human approvals.
+
+| Step | Value |
+|---|---|
+| HSP flow | `22ed967f-079c-478d-8252-3b513558d1a2` |
+| Quote (`token_total_raw`) | `2500762`: 2.500762 USDC, $2.50 plus the HSP fee |
+| USDC transfer, Nova → Credence7 `pay_to` | [`0x4e75e6…f585`](https://testnet-explorer.hskchain.net/tx/0x4e75e6a5f56646605acd4d9a4071b17cc93b3012df85443a92906ce8d8fcf585) |
+| HSP status verified by the receiving agent | `payment-safe` |
+| Settlement anchored in `A2ASettlementRegistry` | [`0xe0bc26…8b57`](https://testnet-explorer.hskchain.net/tx/0xe0bc260ee63c135439c694a0f456de6a5fb18966aa1b0839347a160cace28b57) |
+| Trust | 576 → 591, terms stay Net 7 | The Business page reads these numbers live from the contracts.
 
 <details>
 <summary><b>Live A2A purchases with transaction links (HSK testnet, Oct 31)</b></summary>
@@ -115,7 +128,7 @@ Receiving agent on :8001 and payment agent on :8002, as separate processes.
 
 | Rail | Settles in | Status |
 |---|---|---|
-| **HSP Agentic Payment** (primary) | USDC via the HSP Gateway | Connected to the live HSP QA MCP server: all 8 tools verified, live schemas matched, `get_chain_config` resolves HSK USDC. Integration complete. HSP Operations has allowlisted team Credence7's IP range; the first live HSP payment runs as soon as the allowlist takes effect at HSP's edge |
+| **HSP Agentic Payment** (primary) | USDC via the HSP Gateway | Connected to the live HSP QA MCP server: all 8 tools verified, live schemas matched, `get_chain_config` resolves HSK USDC. **Live.** First HSP payment settled on Nov 2: [`0x4e75e6…f585`](https://testnet-explorer.hskchain.net/tx/0x4e75e6a5f56646605acd4d9a4071b17cc93b3012df85443a92906ce8d8fcf585) (see [Live proof](#first-live-hsp-payment-nov-2-hsk-testnet)) |
 | **Sandbox rail** | Credence Test USD (cUSD), testnet | Live. Exposes the same 8 tools as the HSP MCP server and settles real EIP-3009 `transferWithAuthorization` transactions |
 
 Both rails run the identical state machine: trust check, order, quote, spending-policy check, two human approvals, settlement, anchoring. Every step is labelled with its rail. A sandbox payment is never presented as an HSP payment.
@@ -315,7 +328,7 @@ const score = await registry.trustScore(agent);                  // 300 to 900
 
 ## Run it locally
 
-Requirements: Node.js 20+, Python 3.12, a funded testnet wallet, and, for the HSP rail, **IP allowlisting from HSP Operations** for the machine that runs the agent service (HSP Agentic Payment guide, step 1).
+Requirements: Node.js 20+, Python 3.12, a funded testnet wallet, and, for the HSP rail, **IP allowlisting from HSP Operations** for the machine that runs the agent service (HSP Agentic Payment guide, step 1). HSP allowlists IPv4 addresses, so the agent always connects to HSP over IPv4, even on dual-stack networks such as mobile hotspots.
 
 ```powershell
 git clone https://github.com/hari-hara-sudharsan/Credence-Pay.git

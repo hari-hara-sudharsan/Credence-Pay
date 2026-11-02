@@ -44,7 +44,7 @@ The same $3 risk report, the same seller, four different buyers, four different 
 |---|---|---|---|
 | **Atlas** | 760 | Credit tab | Long record of on-time HSP settlements |
 | **Orbit** | 591 | Net 7 | Reliable, but a thinner history |
-| **Nova** | 576 | Net 7, *recently promoted* | Crossed 560 and moved up from Prepay |
+| **Nova** | 591 | Net 7, *recently promoted* | Crossed 560, then paid its latest tab through HSP |
 | **Rogue** | 441 | Prepay | Defaulted on a $6 tab and lost everything it had earned |
 
 And when someone pretends to be Atlas without Atlas's key, the receiving agent rejects them before any HSP order is created.
@@ -61,19 +61,19 @@ Autonomous spending without guardrails is how agents get drained. Credence puts 
 
 - **A standalone A2A 0.3 receiving agent** (the *Credence Risk Agent*) runs as its own process. Payment agents find it through its Agent Card and buy with **AP2 mandates** (Intent → Cart → Payment) over JSON-RPC. Any A2A-compliant agent can buy from it.
 - **The goods are real:** live wallet risk reports built from HSK Chain data via Blockscout. Credence is its own first customer.
-- **HSP Agentic Payment, done by the book.** Credence connects to the HSP QA MCP server over Streamable HTTP, verifies all 8 tools against their live schemas, resolves HSK USDC with `get_chain_config`, and implements every step of the HSP Agentic Payment guide: recipient and payer confirmation, `token_total_raw` display, approval gates, and the 10-minute "Pending confirmation" polling rule.
+- **HSP Agentic Payment, done by the book.** Credence connects to the HSP QA MCP server over Streamable HTTP, has **settled a live HSP payment**, verifies all 8 tools against their live schemas, resolves HSK USDC with `get_chain_config`, and implements every step of the HSP Agentic Payment guide: recipient and payer confirmation, `token_total_raw` display, approval gates, and the 10-minute "Pending confirmation" polling rule.
 
 ## What we shipped
 
 | | |
 |---|---|
 | **HSK Mainnet** | `A2ASettlementRegistry` [`0xFA2C…3966`](https://hsk.blockscout.com/address/0xFA2CE501f004F53341665911A4E57FbAFA263966) and `AgentSpendingPolicy` [`0xD10e…573b`](https://hsk.blockscout.com/address/0xD10e77AF03cfA0a4241DdD298a9A4d4734Cb573b), wired into the Credence `ReputationRegistry` already live on mainnet |
-| **HSK Testnet** | The full 8-contract stack: **33 real settlements, $97 of agent-to-agent volume, $0.765 of fees accrued on-chain, and one $6 default** |
+| **HSK Testnet** | The full 8-contract stack: **35 real settlements, $102 of agent-to-agent volume, $0.84 of fees accrued on-chain, and one $6 default** |
 | **Agents** | Four payment agents with distinct histories plus a standalone A2A receiving agent |
 | **Tests** | **89 passing**: 75 Solidity (including a 256-run fuzz test that keeps every score inside [300, 900]) and 14 Python (including a full A2A run against a fake HSP server that proves nothing is signed or submitted without approval) |
 | **Web app** | A guided console where you pick a buyer, watch the A2A conversation on the wire, approve each signature, and see the trust score move |
 
-**About the HSP rail.** The HSP integration is complete and verified against the live QA MCP server. HSP Operations has allowlisted Credence7's IP range; live HSP settlement is waiting for that allowlist to take effect at HSP's edge. Until then, all 33 settlements ran on the **sandbox rail**: a testnet dollar with the same EIP-3009 `transferWithAuthorization` scheme HSP uses for USDC, driven through the identical 8-tool state machine. Every step in the app is labelled with its rail, and a sandbox payment is never presented as an HSP payment. Switching rails is one setting.
+**First live HSP payment: settled.** On Nov 2, Nova bought a $2.50 risk report over A2A and paid through HSP Agentic Payment (QA MCP + Gateway, team Credence7): HSP flow `22ed967f-079c-478d-8252-3b513558d1a2`, quote `token_total_raw` 2500762, USDC transfer [`0x4e75e6a5…`](https://testnet-explorer.hskchain.net/tx/0x4e75e6a5f56646605acd4d9a4071b17cc93b3012df85443a92906ce8d8fcf585), verified by the receiving agent as `payment-safe` and anchored on-chain in [`0xe0bc260e…`](https://testnet-explorer.hskchain.net/tx/0xe0bc260ee63c135439c694a0f456de6a5fb18966aa1b0839347a160cace28b57). Trust went from 576 to 591. The earlier settlements ran on the **sandbox rail**, a testnet dollar with the same EIP-3009 scheme HSP uses for USDC, driven through the identical 8-tool state machine. Every step in the app is labelled with its rail.
 
 ## Business model
 
