@@ -101,7 +101,32 @@ export type Trust = {
   policy: { owner: string; daily_cap: number; per_tx_cap: number; spent_today: number; paused: boolean; expires_at: number };
 };
 
+/**
+ * Public showcase builds (NEXT_PUBLIC_SNAPSHOT=1) have no agent service behind them. Reads come from
+ * /snapshot/*.json, captured from the real agent API against HSK testnet; anything that would sign or
+ * pay is refused, because a snapshot cannot move money.
+ */
+export const SNAPSHOT = process.env.NEXT_PUBLIC_SNAPSHOT === "1";
+export const SNAPSHOT_READ_ONLY =
+  "This public demo is a read-only snapshot of the live testnet agents. Clone the repo and run scripts\\dev.ps1 to make a real agent-to-agent payment.";
+
+async function snapshot<T>(path: string, init?: RequestInit): Promise<T> {
+  if ((init?.method ?? "GET") !== "GET" || path.startsWith("/a2a/preflight")) throw new Error(SNAPSHOT_READ_ONLY);
+  const run = path.match(/^\/a2a\/runs\/([^/]+)$/);
+  if (run) {
+    const runs = await snapshot<Run[]>("/a2a/runs");
+    const hit = runs.find((r) => r.id === run[1]);
+    if (!hit) throw new Error("Run not in snapshot");
+    return hit as T;
+  }
+  const file = path.replace(/^\//, "").replace(/\//g, "__").replace(/[?=&]/g, "_");
+  const res = await fetch(`/snapshot/${file}.json`);
+  if (!res.ok) throw new Error(`Not in snapshot: ${path}`);
+  return res.json();
+}
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
+  if (SNAPSHOT) return snapshot<T>(path, init);
   const res = await fetch(`${API}${path}`, {
     ...init,
     headers: { "content-type": "application/json", ...(init?.headers ?? {}) },

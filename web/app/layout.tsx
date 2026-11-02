@@ -4,6 +4,7 @@ import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import Nav, { Logo } from "@/components/Nav";
 import Effects from "@/components/Effects";
 import BackToTop from "@/components/BackToTop";
+import SnapshotBanner from "@/components/SnapshotBanner";
 import "./globals.css";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="scroll-progress" aria-hidden />
         <Effects />
         <BackToTop />
+        <SnapshotBanner />
         <Nav />
         {children}
         <footer className="relative mt-32 border-t border-line">

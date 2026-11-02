@@ -29,6 +29,8 @@ HSK Chain Horizon Hackathon · Mumbai Edition 2026 · **Track 2: Agent Payments 
 <a href="https://youtu.be/rczer5cuPpc"><img src="https://i.ytimg.com/vi/rczer5cuPpc/hqdefault.jpg" alt="Credence demo video thumbnail" width="560"></a>
 
 **[Watch on YouTube →](https://youtu.be/rczer5cuPpc)**
+
+**Try the frontend:** **[credence-pay-lyart.vercel.app](https://credence-pay-lyart.vercel.app)**. It is a read-only showcase that uses a snapshot of the live testnet agents; [run it locally](#run-it-locally) to make real payments.
 </div>
 
 <img src="docs/assets/stats.svg" alt="33 settlements anchored on-chain · $97.00 agent-to-agent volume · $0.765 Credence fees accrued on-chain · 89 tests passing" width="100%">
@@ -113,7 +115,7 @@ Receiving agent on :8001 and payment agent on :8002, as separate processes.
 
 | Rail | Settles in | Status |
 |---|---|---|
-| **HSP Agentic Payment** (primary) | USDC via the HSP Gateway | Connected to the live HSP QA MCP server: all 8 tools verified, live schemas matched, `get_chain_config` resolves HSK USDC. Payments run through HSP once the agent's IP is on HSP's allowlist |
+| **HSP Agentic Payment** (primary) | USDC via the HSP Gateway | Connected to the live HSP QA MCP server: all 8 tools verified, live schemas matched, `get_chain_config` resolves HSK USDC. Integration complete. HSP Operations has allowlisted team Credence7's IP range; the first live HSP payment runs as soon as the allowlist takes effect at HSP's edge |
 | **Sandbox rail** | Credence Test USD (cUSD), testnet | Live. Exposes the same 8 tools as the HSP MCP server and settles real EIP-3009 `transferWithAuthorization` transactions |
 
 Both rails run the identical state machine: trust check, order, quote, spending-policy check, two human approvals, settlement, anchoring. Every step is labelled with its rail. A sandbox payment is never presented as an HSP payment.
