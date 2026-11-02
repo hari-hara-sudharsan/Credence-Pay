@@ -75,6 +75,19 @@ Autonomous spending without guardrails is how agents get drained. Credence puts 
 
 **First live HSP payment: settled.** On Nov 2, Nova bought a $2.50 risk report over A2A and paid through HSP Agentic Payment (QA MCP + Gateway, team Credence7): HSP flow `22ed967f-079c-478d-8252-3b513558d1a2`, quote `token_total_raw` 2500762, USDC transfer [`0x4e75e6a5…`](https://testnet-explorer.hskchain.net/tx/0x4e75e6a5f56646605acd4d9a4071b17cc93b3012df85443a92906ce8d8fcf585), verified by the receiving agent as `payment-safe` and anchored on-chain in [`0xe0bc260e…`](https://testnet-explorer.hskchain.net/tx/0xe0bc260ee63c135439c694a0f456de6a5fb18966aa1b0839347a160cace28b57). Trust went from 576 to 591. The earlier settlements ran on the **sandbox rail**, a testnet dollar with the same EIP-3009 scheme HSP uses for USDC, driven through the identical 8-tool state machine. Every step in the app is labelled with its rail.
 
+## See it in three minutes
+
+Open the [live demo](https://credence-pay-lyart.vercel.app) and follow the same path a buyer agent takes:
+
+1. **Home:** drag the trust simulator from 300 to 900 and watch Prepay turn into Net 7, then a Credit tab.
+2. **Agents:** the trust bureau, with four agents, four scores and four sets of terms, read from `trustScore()` and `termsFor()`.
+3. **Console:** pick Nova, choose the HSP rail, and follow the A2A conversation: Agent Card → identity proof → trust check → Cart Mandate → two human approvals → HSP settlement → on-chain anchor → trust goes up.
+4. **Settlements:** every payment with its rail, HSP flow ID and explorer link, starting with the first live HSP payment.
+5. **Business:** volume by terms, fees accrued on-chain, open tabs and the default rate.
+6. **Developers:** the receiving agent's Agent Card and every contract address, HSK Mainnet first.
+
+The public site is a read-only snapshot of the live testnet agents. Clone the repo and run `scripts\dev.ps1` to make a real payment yourself.
+
 ## Business model
 
 - **1.5% fee on Net and Credit volume**, accrued on-chain by the registry. Prepay stays free, so Credence earns only when it creates value: when trust lets a sale happen on better terms.
