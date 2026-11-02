@@ -10,6 +10,20 @@ from contextlib import asynccontextmanager
 
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
+from mcp.shared._httpx_utils import MCP_DEFAULT_SSE_READ_TIMEOUT, MCP_DEFAULT_TIMEOUT
+
+# HSP allowlists IPv4 addresses. On a dual-stack network (common on mobile hotspots) the OS
+# prefers IPv6, and HSP's edge then sees an address that is not on the allowlist and answers 403.
+# Binding the local side to 0.0.0.0 makes every HSP connection go out over IPv4.
+IPV4_ONLY = "0.0.0.0"
+
+
+def _hsp_http_client():
+    import httpx2
+    return httpx2.AsyncClient(
+        transport=httpx2.AsyncHTTPTransport(local_address=IPV4_ONLY),
+        timeout=httpx2.Timeout(MCP_DEFAULT_TIMEOUT, read=MCP_DEFAULT_SSE_READ_TIMEOUT),
+    )
 
 REQUIRED_TOOLS = {
     "get_chain_config", "create_order", "get_order", "prepare_payment",
@@ -31,7 +45,7 @@ class HSPAgenticPayment:
 
     @asynccontextmanager
     async def _session(self):
-        async with streamable_http_client(self.url) as (read, write):
+        async with _hsp_http_client() as client, streamable_http_client(self.url, http_client=client) as (read, write):
             async with ClientSession(read, write) as session:
                 await session.initialize()
                 yield session
@@ -109,7 +123,7 @@ async def probe(url: str) -> dict:
     """Why can't we use HSP? Checks the documented /health endpoint and this machine's public egress IP."""
     import httpx
     out: dict = {"health": None, "egress_ip": None}
-    async with httpx.AsyncClient(timeout=10) as client:
+    async with httpx.AsyncClient(timeout=10, transport=httpx.AsyncHTTPTransport(local_address=IPV4_ONLY)) as client:
         try:
             r = await client.get(url.rstrip("/") + "/health")
             out["health"] = r.json() if r.status_code == 200 else {"http_status": r.status_code}
