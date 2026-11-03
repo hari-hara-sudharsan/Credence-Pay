@@ -110,8 +110,65 @@ export const SNAPSHOT = process.env.NEXT_PUBLIC_SNAPSHOT === "1";
 export const SNAPSHOT_READ_ONLY =
   "This public demo is a read-only snapshot of the live testnet agents. Clone the repo and run scripts\\dev.ps1 to make a real agent-to-agent payment.";
 
+// ---- Replay: on the public build the console walks through a real recorded run, step by step.
+// Nothing is signed or paid; every value shown comes from that run's record.
+const replays = new Map<string, { rec: Run; stage: number }>();
+
+async function recordedRun(persona: string, rail: string): Promise<Run> {
+  const runs = await snapshot<Run[]>("/a2a/runs");
+  const settled = runs.filter((r) => r.persona === persona && r.state === "settled");
+  const hit = settled.find((r) => r.rail === rail) ?? settled[0];
+  if (!hit) throw new Error(SNAPSHOT_READ_ONLY);
+  return hit;
+}
+
+// stage 0: up to the first approval · 1: up to the second · 2: everything (settled)
+function replayView(id: string): Run {
+  const r = replays.get(id)!;
+  const { rec, stage } = r;
+  const steps = rec.steps;
+  const stop = stage === 0 ? steps.findIndex((s) => s.key === "approve_sign") : stage === 1 ? steps.findIndex((s) => s.key === "approve_submit") : steps.length - 1;
+  const shown = steps.slice(0, stop + 1).map((s, i) => (i === stop && stage < 2 ? { ...s, status: "waiting" as const } : s));
+  const when = new Date(rec.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  const note: Step = {
+    key: "replay",
+    title: `Replay of a recorded ${rec.rail === "hsp" ? "HSP" : "sandbox"} run`,
+    detail: `Read-only showcase: ${rec.persona_name}'s real run from ${when}. Nothing is signed or paid here; every value is from the on-chain record.`,
+    status: "done",
+    data: { run: rec.id },
+    at: rec.created_at,
+  };
+  const state = stage === 0 ? "awaiting_sign_approval" : stage === 1 ? "awaiting_submit_approval" : rec.state;
+  return { ...rec, id, state, steps: [note, ...shown] } as Run;
+}
+
+async function replay<T>(path: string, init?: RequestInit): Promise<T | undefined> {
+  const pre = path.match(/^\/a2a\/preflight\?persona=([^&]+)&rail=([^&]+)/);
+  if (pre) {
+    const rec = await recordedRun(pre[1], pre[2]);
+    return { merchant_name: rec.merchant_name, pay_to: rec.payee, payer: rec.payer, rail: rec.rail, network: "hashkey-testnet", chain_id: 133, agent: "Credence Risk Agent", confirmation_required: true } as T;
+  }
+  if (path === "/a2a/runs" && init?.method === "POST") {
+    const body = JSON.parse(String(init.body ?? "{}"));
+    const rec = await recordedRun(body.persona, body.rail);
+    const id = `replay-${rec.id}-${replays.size + 1}`;
+    replays.set(id, { rec, stage: 0 });
+    return replayView(id) as T;
+  }
+  const act = path.match(/^\/a2a\/runs\/(replay-[^/]+)(?:\/(approve-sign|approve-submit))?$/);
+  if (act && replays.has(act[1])) {
+    const r = replays.get(act[1])!;
+    if (act[2] === "approve-sign") r.stage = Math.max(r.stage, 1);
+    if (act[2] === "approve-submit") r.stage = 2;
+    return replayView(act[1]) as T;
+  }
+  return undefined;
+}
+
 async function snapshot<T>(path: string, init?: RequestInit): Promise<T> {
-  if ((init?.method ?? "GET") !== "GET" || path.startsWith("/a2a/preflight")) throw new Error(SNAPSHOT_READ_ONLY);
+  const rp = await replay<T>(path, init);
+  if (rp !== undefined) return rp;
+  if ((init?.method ?? "GET") !== "GET") throw new Error(SNAPSHOT_READ_ONLY);
   const run = path.match(/^\/a2a\/runs\/([^/]+)$/);
   if (run) {
     const runs = await snapshot<Run[]>("/a2a/runs");

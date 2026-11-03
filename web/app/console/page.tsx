@@ -9,7 +9,7 @@ import TrustPanel from "@/components/console/TrustPanel";
 import WirePanel from "@/components/console/WirePanel";
 import StateBadge from "@/components/StateBadge";
 import { AgentAvatar, RailBadge, TermsBadge } from "@/components/ui";
-import { API, addrUrl, api, short, usd, type AgentCard, type HspStatus, type LeaderRow, type Run, type Trust } from "@/lib/api";
+import { API, SNAPSHOT, addrUrl, api, short, usd, type AgentCard, type HspStatus, type LeaderRow, type Run, type Trust } from "@/lib/api";
 
 const BORROWERS = [
   { address: "0x2988f0bE02e1a679430aEb4A6B9B10429F1e8e80", label: "Borrower A" },
@@ -309,8 +309,15 @@ export default function ConsolePage() {
             Continue <ArrowRight className="size-4" />
           </button>
           <span className="text-xs text-faint">
-            {hspBlocked ? "Switch to the sandbox rail, or wait until HSP accepts this machine." : "Next: confirm team, recipient and payer. Nothing is signed yet."}
+            {hspBlocked
+              ? "Switch to the sandbox rail, or wait until HSP accepts this machine."
+              : SNAPSHOT
+                ? "Showcase build: this replays one of the agent's real recorded runs. Nothing is signed or paid."
+                : "Next: confirm team, recipient and payer. Nothing is signed yet."}
           </span>
+          {error && !run && (
+            <div role="alert" className="max-w-xl rounded-2xl border border-bad/30 bg-bad/10 px-4 py-3 text-center text-sm text-bad">{error}</div>
+          )}
         </div>
       </Section>
 
