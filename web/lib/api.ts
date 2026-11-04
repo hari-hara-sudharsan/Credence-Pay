@@ -114,10 +114,27 @@ export const SNAPSHOT_READ_ONLY =
 // Nothing is signed or paid; every value shown comes from that run's record.
 const replays = new Map<string, { rec: Run; stage: number }>();
 
+const TERMS_NAME: Record<string, string> = { PREPAY: "Prepay", NET: "Net 7", CREDIT: "Credit tab" };
+const standing = new Map<string, string>();   // replay id -> the agent's current on-chain standing
+
+// The agent's current terms and score, from the snapshot of the live registry.
+async function currentStanding(persona: string): Promise<{ terms?: string; score?: number }> {
+  const agents = await snapshot<{ personas: Persona[] }>("/agents").catch(() => null);
+  const who = agents?.personas.find((a) => a.id === persona);
+  if (!who) return {};
+  const t = await snapshot<any>(`/agents/${who.address}/trust`).catch(() => null);
+  return { terms: t?.terms?.terms, score: t?.trust_score };
+}
+
+// A settled recorded run for this agent: same rail, and terms that match the agent's terms today,
+// so a replay never shows a seller offering better terms than the agent now has.
 async function recordedRun(persona: string, rail: string): Promise<Run> {
   const runs = await snapshot<Run[]>("/a2a/runs");
   const settled = runs.filter((r) => r.persona === persona && r.state === "settled");
-  const hit = settled.find((r) => r.rail === rail) ?? settled[0];
+  const now = await currentStanding(persona);
+  // terms offered on that purchase and the terms it led to both match today's
+  const sameTerms = settled.filter((r: any) => !now.terms || (r.terms === now.terms && (r.next_terms?.terms ?? r.terms) === now.terms));
+  const hit = sameTerms.find((r) => r.rail === rail) ?? sameTerms[0] ?? settled.find((r) => r.rail === rail) ?? settled[0];
   if (!hit) throw new Error(SNAPSHOT_READ_ONLY);
   return hit;
 }
@@ -133,7 +150,7 @@ function replayView(id: string): Run {
   const note: Step = {
     key: "replay",
     title: `Replay of a recorded ${rec.rail === "hsp" ? "HSP" : "sandbox"} run`,
-    detail: `Read-only showcase: ${rec.persona_name}'s real run from ${when}. Nothing is signed or paid here; every value is from the on-chain record.`,
+    detail: `Read-only showcase: ${rec.persona_name}'s real run from ${when}. Nothing is signed or paid here; every value is from the on-chain record.${standing.get(id) ?? ""}`,
     status: "done",
     data: { run: rec.id },
     at: rec.created_at,
@@ -153,6 +170,8 @@ async function replay<T>(path: string, init?: RequestInit): Promise<T | undefine
     const rec = await recordedRun(body.persona, body.rail);
     const id = `replay-${rec.id}-${replays.size + 1}`;
     replays.set(id, { rec, stage: 0 });
+    const now = await currentStanding(body.persona);
+    if (now.score != null && now.terms) standing.set(id, ` Today on-chain: trust ${now.score} · ${TERMS_NAME[now.terms] ?? now.terms}.`);
     return replayView(id) as T;
   }
   const act = path.match(/^\/a2a\/runs\/(replay-[^/]+)(?:\/(approve-sign|approve-submit))?$/);
