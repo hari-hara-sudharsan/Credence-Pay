@@ -8,7 +8,7 @@ Track 2: Agent Payments & A2A Settlement (HSP) · Contracts live on HSK Mainnet 
 
 ## The 2 a.m. problem
 
-It's 2 a.m. A lending agent needs a wallet risk report to approve a loan before its human wakes up. A risk agent it has never met can sell one for $3.
+It's 2 a.m. A lending agent needs a wallet risk report to approve a loan before its human wakes up. A risk agent it has never met can sell one for $2.50.
 
 Who goes first?
 
@@ -17,6 +17,8 @@ If the seller demands prepayment, a buyer that has paid on time five hundred tim
 Humans solved this centuries ago with credit history: the corner-shop tab, the trade reference, the credit bureau. Agents have nothing like it. HSP gives them a way to pay. Nobody has given them a reason to trust each other.
 
 **Credence is that reason.**
+
+Today an agent can prove it has a wallet, but not that it deserves credit. Identity tells a seller *who* an agent is; a verified agent can still default. Credence tells the seller *what terms that agent has earned*, priced from its real payment behaviour.
 
 ## The idea in one loop
 
@@ -38,7 +40,7 @@ Trust is earned slowly and lost in one transaction: a single default sends an ag
 
 ## Watch four agents buy the same thing
 
-The same $3 risk report, the same seller, four different buyers, four different outcomes. All of it is computed live from on-chain history:
+The same $2.50 risk report, the same seller, four different buyers, four different outcomes. All of it is computed live from on-chain history:
 
 | Agent | Score | What the seller offers | Why |
 |---|---|---|---|
@@ -95,6 +97,8 @@ The public site is a read-only snapshot of the live testnet agents. Clone the re
 - Underwriting credit tabs from the existing `LendingPool`.
 - Selling risk intelligence agent-to-agent over HSP.
 
+**Risk is bounded by design.** A credit tab is capped at $25 to $225 per agent, so a default is a small, known loss, and it costs the defaulter every term it earned. Defaulting is more expensive than paying.
+
 **The moat is time.** Anyone can fork the contracts. Nobody can fork two years of settlement history.
 
 ## Why HashKey
@@ -103,9 +107,15 @@ HSK Chain is a compliance-first chain with HSP as its native payment rail. Crede
 
 ## Vision
 
+Credence turns payment history into **portable economic trust** for agents. Every verified payment becomes a signal of trust. Every trusted agent can earn better terms. And every seller can make a smarter decision without needing to know the agent personally, because the record lives on-chain and any seller can read it with `trustScore()` and `termsFor()`.
+
 ERC-20 made assets programmable. ERC-721 made ownership programmable. **Credence makes trust programmable.**
 
+In the agent economy, the breakthrough isn't just making agents able to pay. **It's making agents worth trusting.**
+
 When agents transact at machine speed, every sale on HashKey Chain should start with one question: *what does Credence say about this agent?*
+
+> **HSP lets agents pay. Credence decides the terms.**
 
 ---
 
