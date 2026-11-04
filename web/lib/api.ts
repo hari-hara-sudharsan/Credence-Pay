@@ -184,9 +184,50 @@ async function replay<T>(path: string, init?: RequestInit): Promise<T | undefine
   return undefined;
 }
 
+// Any wallet that isn't one of the four demo agents (a connected wallet, an owner, a merchant):
+// read its standing straight from the testnet contracts, so every passport link works on the
+// public build. Same shape as the agent service's GET /agents/{address}/trust.
+const TESTNET = { rpc: "https://testnet.hsk.xyz", registry: "0x0da11d916c5730E19a48bEc142387bEFDb59A819", policy: "0x7a9559Db3c9846825102c3513AbA2973A1A47BCA" };
+async function chainTrust(address: string): Promise<Trust> {
+  const { JsonRpcProvider, Contract, getAddress } = await import("ethers");
+  const p = new JsonRpcProvider(TESTNET.rpc, 133, { staticNetwork: true });
+  const reg = new Contract(TESTNET.registry, [
+    "function trustScore(address) view returns (uint256)",
+    "function termsFor(address) view returns (uint8, uint256, uint256)",
+    "function getStats(address) view returns (uint32, uint32, uint32, uint32, uint128, uint128, uint64, uint64)",
+  ], p);
+  const pol = new Contract(TESTNET.policy, [
+    "function policies(address) view returns (address, uint256, uint256, uint64, bool, bool)",
+    "function spentToday(address) view returns (uint256)",
+  ], p);
+  const a = getAddress(address);
+  const [score, [t, limit, netDays], s, [owner, daily, perTx, expires, anyMerchant, paused], spent] = await Promise.all([
+    reg.trustScore(a), reg.termsFor(a), reg.getStats(a), pol.policies(a), pol.spentToday(a),
+  ]);
+  const usd = (v: bigint) => Number(v) / 1e6;
+  return {
+    address: a,
+    trust_score: Number(score),
+    terms: { terms: (["PREPAY", "NET", "CREDIT"] as const)[Number(t)], credit_limit: usd(limit), net_days: Number(netDays) },
+    stats: {
+      settled_count: Number(s[0]), on_time_count: Number(s[1]), late_count: Number(s[2]), default_count: Number(s[3]),
+      settled_volume: usd(s[4]), outstanding: usd(s[5]), first_seen_at: Number(s[6]), last_settled_at: Number(s[7]),
+    },
+    policy: { owner, daily_cap: usd(daily), per_tx_cap: usd(perTx), spent_today: usd(spent), paused, expires_at: Number(expires), any_merchant: anyMerchant },
+  } as unknown as Trust;
+}
+
 async function snapshot<T>(path: string, init?: RequestInit): Promise<T> {
   const rp = await replay<T>(path, init);
   if (rp !== undefined) return rp;
+  const trust = path.match(/^\/agents\/(0x[0-9a-fA-F]{40})\/trust$/);
+  if (trust) {
+    // the four demo agents come from the snapshot (checksummed file names; links may be lowercase)
+    const agents = await fetch("/snapshot/agents.json").then((r) => r.json()).catch(() => null);
+    const known = agents?.personas?.find((x: Persona) => x.address.toLowerCase() === trust[1].toLowerCase());
+    if (known) { const k = await fetch(`/snapshot/agents__${known.address}__trust.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null); if (k) return k as T; }
+    return (await chainTrust(trust[1])) as T;
+  }
   if ((init?.method ?? "GET") !== "GET") throw new Error(SNAPSHOT_READ_ONLY);
   const run = path.match(/^\/a2a\/runs\/([^/]+)$/);
   if (run) {
